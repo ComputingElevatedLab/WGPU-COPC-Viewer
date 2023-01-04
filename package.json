@@ -1,0 +1,27 @@
+{
+  "name": "octree",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack server",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pravinpoudel/octree.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pravinpoudel/octree/issues"
+  },
+  "homepage": "https://github.com/pravinpoudel/octree#readme",
+  "dependencies": {
+    "three": "^0.148.0",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.11.1"
+  }
+}
