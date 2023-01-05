@@ -18,7 +18,7 @@ module.exports = {
     static: path.resolve(__dirname, "dist"),
     hot: true,
   },
-  mode: "development",
+  mode: "production",
   devtool: "cheap-module-source-map",
   plugins: [],
 };

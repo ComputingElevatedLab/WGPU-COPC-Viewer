@@ -8,7 +8,6 @@ function fillArray(nodes, count, WIDTH, HEIGHT, DEPTH) {
       Math.floor(Math.random() * HEIGHT) - HEIGHT / 2,
       Math.floor(Math.random() * DEPTH) - DEPTH / 2
     );
-    console.log(node.x, node.y, node.z);
     nodes.push(node);
   }
 }

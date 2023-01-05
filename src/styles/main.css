@@ -7,4 +7,16 @@
 
 body {
   overflow: hidden;
+  font-family: "Poppins", sans-serif;
+}
+
+.note {
+  position: absolute;
+  color: wheat;
+  top: 15px;
+  left: 20px;
+}
+
+.note title {
+  font-size: 20px;
 }

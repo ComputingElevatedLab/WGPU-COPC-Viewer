@@ -12,7 +12,7 @@ const yellow = new THREE.Color(0xe69b00);
 const grey = new THREE.Color(0xe0a387);
 const illusion = new THREE.Color(0xf1a784);
 
-const colors = [white, red, green, blue, yellow, grey, illusion];
+const colors = [yellow, red, green, blue, green, grey, illusion];
 // -------------------------------------
 
 class Node {
@@ -44,13 +44,14 @@ class Box {
       new THREE.MeshBasicMaterial({ color: colors[level % 7], wireframe: true })
     );
     mesh.position.set(x, y, z);
+    mesh.updateMatrix();
+    mesh.matrixAutoUpdate = false;
     this.mesh = mesh;
     scene.add(mesh);
   }
 
   bound(node) {
     if (this.x + this.width * 0.5 == 0.5 * MAX_BOUNDARY_X) {
-      console.log("this is a x boundry box");
       return (
         node.x >= this.x - this.width * 0.5 &&
         node.x <= this.x + this.width * 0.5 &&
@@ -61,7 +62,6 @@ class Box {
       );
     }
     if (this.y + this.width * 0.5 == 0.5 * MAX_BOUNDARY_Y) {
-      console.log(" this is y boundary node");
       return (
         node.x >= this.x - this.width * 0.5 &&
         node.x < this.x + this.width * 0.5 &&
@@ -72,7 +72,6 @@ class Box {
       );
     }
     if (this.z + this.width * 0.5 == 0.5 * MAX_BOUNDARY_Z) {
-      console.log("this is z boundary");
       return (
         node.x >= this.x - this.width * 0.5 &&
         node.x < this.x + this.width * 0.5 &&

@@ -20,7 +20,7 @@ function init() {
     1,
     100000
   );
-  camera.position.z = 1200;
+  camera.position.z = 1500;
 
   const geometry = new THREE.BoxGeometry(200, 200, 200);
   const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -62,11 +62,10 @@ let qt = new Octree(box);
 let count = 0;
 nodes.forEach((element, index) => {
   if (qt.insert(element)) {
-    console.log("inserted point is", element);
+    
     count++;
   }
 });
-console.log("total inserted elements are", count);
 
 function animate() {
   requestAnimationFrame(animate);
