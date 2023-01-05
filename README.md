@@ -11,3 +11,7 @@ to install and run:
 ```
 3. npm run dev
 ```
+Current render output:
+
+![image](https://user-images.githubusercontent.com/11494733/210715218-47b58d63-4b13-4f17-aa5a-5636f67321bd.png)
+
