@@ -6,8 +6,9 @@ function fillArray(nodes, count, WIDTH, HEIGHT, DEPTH) {
       i,
       Math.floor(Math.random() * WIDTH) - WIDTH / 2,
       Math.floor(Math.random() * HEIGHT) - HEIGHT / 2,
-      Math.floor(Math.random() * DEPTH)
+      Math.floor(Math.random() * DEPTH) - DEPTH / 2
     );
+    console.log(node.x, node.y, node.z);
     nodes.push(node);
   }
 }
