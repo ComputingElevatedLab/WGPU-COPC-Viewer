@@ -3,7 +3,7 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     filename: "bundle.js",
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve(__dirname, "docs"),
   },
   module: {
     rules: [
@@ -15,7 +15,7 @@ module.exports = {
   },
   devServer: {
     port: 8080,
-    static: path.resolve(__dirname, "dist"),
+    static: path.resolve(__dirname, "docs"),
     hot: true,
   },
   mode: "production",
