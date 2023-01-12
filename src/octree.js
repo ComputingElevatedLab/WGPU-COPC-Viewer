@@ -194,45 +194,46 @@ class Octree {
 
   insert(node) {
     if (!this.box.bound(node)) {
-      console.log(
-        "out of boundary",
-        "for node",
-        node.x,
-        node.y,
-        node.z,
-        "for box",
-        this.box.x,
-        this.box.y,
-        this.box.z,
-        this.box.width * 0.5,
-        this.box.label
-      );
+      // console.log(
+      //   "out of boundary",
+      //   "for node",
+      //   node.x,
+      //   node.y,
+      //   node.z,
+      //   "for box",
+      //   this.box.x,
+      //   this.box.y,
+      //   this.box.z,
+      //   this.box.width * 0.5,
+      //   this.box.label
+      // );
       return false;
     }
-    if (this.nodes.length < 1 && !this.isDivided) {
+    if (this.nodes.length < 32 && !this.isDivided) {
       this.nodes.push(node);
       return true;
     } else {
       if (!this.isDivided) {
         this.partition();
-        let existingNode = this.nodes[0];
-        if (
-          existingNode.x == node.x &&
-          existingNode.y == node.y &&
-          existingNode.z == node.z
-        ) {
-          console.log("repetitive node not allowed");
-          return false;
-        }
-        this.isDivided = true;
-        this.minNE.insert(existingNode) ||
-          this.minNW.insert(existingNode) ||
-          this.minSE.insert(existingNode) ||
-          this.minSW.insert(existingNode) ||
-          this.maxNE.insert(existingNode) ||
-          this.maxNW.insert(existingNode) ||
-          this.maxSW.insert(existingNode) ||
-          this.maxSE.insert(existingNode);
+        this.nodes.forEach((element, index) => {
+          let existingNode = element;
+          if (
+            existingNode.x == node.x &&
+            existingNode.y == node.y &&
+            existingNode.z == node.z
+          ) {
+            console.log("repetitive node not allowed");
+            return false;
+          }
+          this.minNE.insert(existingNode) ||
+            this.minNW.insert(existingNode) ||
+            this.minSE.insert(existingNode) ||
+            this.minSW.insert(existingNode) ||
+            this.maxNE.insert(existingNode) ||
+            this.maxNW.insert(existingNode) ||
+            this.maxSW.insert(existingNode) ||
+            this.maxSE.insert(existingNode);
+        });
       }
       return (
         this.minNE.insert(node) ||

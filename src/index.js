@@ -66,6 +66,8 @@ nodes.forEach((element, index) => {
   }
 });
 
+console.log("added", count);
+
 function animate() {
   requestAnimationFrame(animate);
   controls.autoRotate = true;
