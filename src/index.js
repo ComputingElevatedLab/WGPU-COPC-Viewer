@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Octree, Box, Node } from "./octree";
+import { Octree, Box, Point } from "./octree";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import Stats from "three/examples/jsm/libs/stats.module";
 import "./styles/main.css";
@@ -11,7 +11,7 @@ let scene_width = 1000;
 let scene_height = 1000;
 let scene_depth = 1000;
 scene = new THREE.Scene();
-let nodes = [];
+let points = [];
 init();
 function init() {
   camera = new THREE.PerspectiveCamera(
@@ -36,8 +36,8 @@ function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.listenToKeyEvents(window); // optional
 
-  fillArray(nodes, 10000, scene_width, scene_height, scene_depth);
-  nodes.forEach((element, index) => {
+  fillArray(points, 10000, scene_width, scene_height, scene_depth);
+  points.forEach((element, index) => {
     scene.add(element.mesh);
   });
   window.addEventListener("resize", onWindowResize);
@@ -49,8 +49,6 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-let node = new Node(1, 3, 3, 3);
-let node2 = new Node(1, 3, 3, 3);
 let box = new Box(
   "main quad",
   0,
@@ -60,7 +58,7 @@ let box = new Box(
 );
 let qt = new Octree(box);
 let count = 0;
-nodes.forEach((element, index) => {
+points.forEach((element, index) => {
   if (qt.insert(element)) {
     count++;
   }

@@ -15,7 +15,7 @@ const illusion = new THREE.Color(0xf1a784);
 const colors = [yellow, red, green, blue, green, grey, illusion];
 // -------------------------------------
 
-class Node {
+class Point {
   constructor(index, x, y, z) {
     this.index = index;
     this.x = x;
@@ -105,7 +105,7 @@ class Octree {
     this.maxSW = null;
     this.maxSE = null;
     this.isDivided = false;
-    this.representativeNodes = [];
+    // this.representativeNodes = [];
     this.points = [];
     this.buffer = [];
     this.level = level;
@@ -266,4 +266,4 @@ class Octree {
   }
 }
 
-export { Node, Box, Octree };
+export { Point, Box, Octree };
