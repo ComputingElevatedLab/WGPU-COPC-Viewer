@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { Octree, Box, Node } from "./octree";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import Stats from "three/examples/jsm/libs/stats.module";
 import "./styles/main.css";
-import { fillArray } from "./helper";
+import { fillArray, fillMidNodes } from "./helper";
 let camera, scene, renderer;
 let mesh, controls;
 
@@ -12,7 +13,6 @@ let scene_depth = 1000;
 scene = new THREE.Scene();
 let nodes = [];
 init();
-
 function init() {
   camera = new THREE.PerspectiveCamera(
     70,
@@ -36,7 +36,7 @@ function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.listenToKeyEvents(window); // optional
 
-  fillArray(nodes, 1000, scene_width, scene_height, scene_depth);
+  fillArray(nodes, 10000, scene_width, scene_height, scene_depth);
   nodes.forEach((element, index) => {
     scene.add(element.mesh);
   });
@@ -67,9 +67,17 @@ nodes.forEach((element, index) => {
 });
 
 console.log("added", count);
-
+console.log(qt);
+let resulted = fillMidNodes(qt);
+console.log(qt);
+const stats_mb = Stats();
+stats_mb.domElement.style.cssText = "position:absolute;top:50px;right:50px;";
+stats_mb.showPanel(2);
+console.log(stats_mb);
+document.body.appendChild(stats_mb.dom);
 function animate() {
   requestAnimationFrame(animate);
+  stats_mb.update();
   controls.autoRotate = true;
   controls.update();
   renderer.render(scene, camera);

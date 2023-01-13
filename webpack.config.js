@@ -1,3 +1,4 @@
+const webpack = require("webpack");
 const path = require("path");
 module.exports = {
   entry: "./src/index.js",
@@ -20,5 +21,11 @@ module.exports = {
   },
   mode: "development",
   devtool: "cheap-module-source-map",
-  plugins: [],
+  plugins: [
+    new webpack.DefinePlugin({
+      tree: {
+        leafCapacity: 16,
+      },
+    }),
+  ],
 };

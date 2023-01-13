@@ -105,9 +105,20 @@ class Octree {
     this.maxSW = null;
     this.maxSE = null;
     this.isDivided = false;
+    this.representativeNodes = [];
     this.nodes = [];
     this.level = level;
+    this.parent = null;
   }
+
+  // function findRepresentiveNode(){
+  //   let children = [this.minNE, this.minNW, this.minSW, this.minSE, this.maxNE, this.maxNW, this.maxSW, this.maxSE]
+  //   children.forEach((element, index)=>{
+  //     if(element != null && element.length>0){
+  //       this.representativeNodes.push(element.nodes[0])
+  //     }
+  //   })
+  // }
 
   partition() {
     let x = this.box.x;
@@ -209,8 +220,10 @@ class Octree {
       // );
       return false;
     }
-    if (this.nodes.length < 32 && !this.isDivided) {
-      this.nodes.push(node);
+    if (this.nodes.length < tree.leafCapacity && !this.isDivided) {
+      // this.updateRepresentativeNode();
+      this.nodes.push(node.index);
+      // this.sortNode();
       return true;
     } else {
       if (!this.isDivided) {
@@ -234,6 +247,7 @@ class Octree {
             this.maxSW.insert(existingNode) ||
             this.maxSE.insert(existingNode);
         });
+        this.nodes = [];
       }
       return (
         this.minNE.insert(node) ||
