@@ -47,7 +47,7 @@ class Box {
     mesh.updateMatrix();
     mesh.matrixAutoUpdate = false;
     this.mesh = mesh;
-    scene.add(mesh);
+    // scene.add(mesh);
   }
 
   bound(point) {

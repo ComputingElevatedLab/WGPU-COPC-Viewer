@@ -6,10 +6,11 @@ import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
 let camera, scene, renderer;
 let mesh, controls;
-
+let boxGroup = new THREE.Group();
 let scene_width = 1000;
 let scene_height = 1000;
 let scene_depth = 1000;
+let qt;
 scene = new THREE.Scene();
 let points = [];
 init();
@@ -27,6 +28,7 @@ function init() {
 
   mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
+  scene.add(boxGroup);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -37,12 +39,58 @@ function init() {
   controls.listenToKeyEvents(window); // optional
 
   fillArray(points, 10000, scene_width, scene_height, scene_depth);
-  points.forEach((element, index) => {
-    scene.add(element.mesh);
-  });
+  // points.forEach((element, index) => {
+  //   // scene.add(element.mesh);
+  // });
   window.addEventListener("resize", onWindowResize);
 }
 
+function findLevel(qt) {
+  // traverse octre
+  let threshold = 1500;
+
+  let cameraPosition = controls.object.position;
+  // remove all bounding box 3d object after disposing before every check
+  for (let i = 0, _length = boxGroup.children.length; i < _length; i++) {
+    boxGroup.children[i].material.dispose();
+    boxGroup.children[i].geometry.dispose();
+  }
+
+  boxGroup.remove(...boxGroup.children);
+
+  function traverseTree(node = qt) {
+    if (node == null) {
+      return null;
+    }
+    boxGroup.add(node.box.mesh);
+    if (!node.isDivided) {
+      return [...node.points, ...node.buffer];
+    }
+    let myDistanceFromCamera = cameraPosition.distanceTo(
+      new THREE.Vector3(node.box.x, node.box.y, node.box.z)
+    );
+    if (myDistanceFromCamera > threshold) {
+      return node.points;
+    }
+    let children = [
+      node.minNE,
+      node.minNW,
+      node.minSW,
+      node.minSE,
+      node.maxNE,
+      node.maxNW,
+      node.maxSW,
+      node.maxSE,
+    ];
+    let results = [];
+    for (let i = 0, _length = children.length; i < _length; i++) {
+      let points = traverseTree(children[i]);
+      results.push(...points);
+    }
+    return results;
+  }
+  return traverseTree();
+}
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -56,12 +104,15 @@ let box = new Box(
   0,
   Math.max(scene_width, scene_height, scene_depth)
 );
-let qt = new Octree(box);
+qt = new Octree(box);
 let count = 0;
 points.forEach((element, index) => {
   if (qt.insert(element)) {
     count++;
   }
+});
+controls.addEventListener("change", () => {
+  findLevel(qt);
 });
 
 const stats_mb = Stats();
