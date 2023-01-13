@@ -14,8 +14,8 @@ function fillArray(nodes, count, WIDTH, HEIGHT, DEPTH) {
 
 function fillMidNodes(tree) {
   if (!tree.isDivided) {
-    tree.nodes.splice(0, 1);
-    return tree.nodes[0];
+    tree.points.splice(0, 1);
+    return tree.points[0];
   }
 
   let children = [

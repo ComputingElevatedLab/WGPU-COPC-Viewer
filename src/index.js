@@ -66,14 +66,9 @@ nodes.forEach((element, index) => {
   }
 });
 
-console.log("added", count);
-console.log(qt);
-let resulted = fillMidNodes(qt);
-console.log(qt);
 const stats_mb = Stats();
 stats_mb.domElement.style.cssText = "position:absolute;top:50px;right:50px;";
 stats_mb.showPanel(2);
-console.log(stats_mb);
 document.body.appendChild(stats_mb.dom);
 function animate() {
   requestAnimationFrame(animate);

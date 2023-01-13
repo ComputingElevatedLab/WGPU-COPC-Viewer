@@ -50,44 +50,44 @@ class Box {
     scene.add(mesh);
   }
 
-  bound(node) {
+  bound(point) {
     if (this.x + this.width * 0.5 == 0.5 * MAX_BOUNDARY_X) {
       return (
-        node.x >= this.x - this.width * 0.5 &&
-        node.x <= this.x + this.width * 0.5 &&
-        node.y < this.y + this.width * 0.5 &&
-        node.y >= this.y - this.width * 0.5 &&
-        node.z >= this.z - this.width * 0.5 &&
-        node.z < this.z + this.width * 0.5
+        point.x >= this.x - this.width * 0.5 &&
+        point.x <= this.x + this.width * 0.5 &&
+        point.y < this.y + this.width * 0.5 &&
+        point.y >= this.y - this.width * 0.5 &&
+        point.z >= this.z - this.width * 0.5 &&
+        point.z < this.z + this.width * 0.5
       );
     }
     if (this.y + this.width * 0.5 == 0.5 * MAX_BOUNDARY_Y) {
       return (
-        node.x >= this.x - this.width * 0.5 &&
-        node.x < this.x + this.width * 0.5 &&
-        node.y <= this.y + this.width * 0.5 &&
-        node.y >= this.y - this.width * 0.5 &&
-        node.z >= this.z - this.width * 0.5 &&
-        node.z < this.z + this.width * 0.5
+        point.x >= this.x - this.width * 0.5 &&
+        point.x < this.x + this.width * 0.5 &&
+        point.y <= this.y + this.width * 0.5 &&
+        point.y >= this.y - this.width * 0.5 &&
+        point.z >= this.z - this.width * 0.5 &&
+        point.z < this.z + this.width * 0.5
       );
     }
     if (this.z + this.width * 0.5 == 0.5 * MAX_BOUNDARY_Z) {
       return (
-        node.x >= this.x - this.width * 0.5 &&
-        node.x < this.x + this.width * 0.5 &&
-        node.y < this.y + this.width * 0.5 &&
-        node.y >= this.y - this.width * 0.5 &&
-        node.z >= this.z - this.width * 0.5 &&
-        node.z <= this.z + this.width * 0.5
+        point.x >= this.x - this.width * 0.5 &&
+        point.x < this.x + this.width * 0.5 &&
+        point.y < this.y + this.width * 0.5 &&
+        point.y >= this.y - this.width * 0.5 &&
+        point.z >= this.z - this.width * 0.5 &&
+        point.z <= this.z + this.width * 0.5
       );
     } else {
       return (
-        node.x >= this.x - this.width * 0.5 &&
-        node.x < this.x + this.width * 0.5 &&
-        node.y < this.y + this.width * 0.5 &&
-        node.y >= this.y - this.width * 0.5 &&
-        node.z >= this.z - this.width * 0.5 &&
-        node.z < this.z + this.width * 0.5
+        point.x >= this.x - this.width * 0.5 &&
+        point.x < this.x + this.width * 0.5 &&
+        point.y < this.y + this.width * 0.5 &&
+        point.y >= this.y - this.width * 0.5 &&
+        point.z >= this.z - this.width * 0.5 &&
+        point.z < this.z + this.width * 0.5
       );
     }
   }
@@ -106,7 +106,8 @@ class Octree {
     this.maxSE = null;
     this.isDivided = false;
     this.representativeNodes = [];
-    this.nodes = [];
+    this.points = [];
+    this.buffer = [];
     this.level = level;
     this.parent = null;
   }
@@ -203,14 +204,14 @@ class Octree {
     this.isDivided = true;
   }
 
-  insert(node) {
-    if (!this.box.bound(node)) {
+  insert(point) {
+    if (!this.box.bound(point)) {
       // console.log(
       //   "out of boundary",
       //   "for node",
-      //   node.x,
-      //   node.y,
-      //   node.z,
+      //   point.x,
+      //   point.y,
+      //   point.z,
       //   "for box",
       //   this.box.x,
       //   this.box.y,
@@ -220,44 +221,46 @@ class Octree {
       // );
       return false;
     }
-    if (this.nodes.length < tree.leafCapacity && !this.isDivided) {
+    if (this.points.length < tree.leafCapacity && !this.isDivided) {
       // this.updateRepresentativeNode();
-      this.nodes.push(node.index);
+      this.points.push(point.index);
       // this.sortNode();
+      return true;
+    } else if (this.buffer.length < tree.bufferCapacity && !this.isDivided) {
+      this.buffer.push(point.index);
       return true;
     } else {
       if (!this.isDivided) {
         this.partition();
-        this.nodes.forEach((element, index) => {
-          let existingNode = element;
+        this.buffer.forEach((existingPoint, index) => {
           if (
-            existingNode.x == node.x &&
-            existingNode.y == node.y &&
-            existingNode.z == node.z
+            existingPoint.x == point.x &&
+            existingPoint.y == point.y &&
+            existingPoint.z == point.z
           ) {
             console.log("repetitive node not allowed");
             return false;
           }
-          this.minNE.insert(existingNode) ||
-            this.minNW.insert(existingNode) ||
-            this.minSE.insert(existingNode) ||
-            this.minSW.insert(existingNode) ||
-            this.maxNE.insert(existingNode) ||
-            this.maxNW.insert(existingNode) ||
-            this.maxSW.insert(existingNode) ||
-            this.maxSE.insert(existingNode);
+          this.minNE.insert(existingPoint) ||
+            this.minNW.insert(existingPoint) ||
+            this.minSE.insert(existingPoint) ||
+            this.minSW.insert(existingPoint) ||
+            this.maxNE.insert(existingPoint) ||
+            this.maxNW.insert(existingPoint) ||
+            this.maxSW.insert(existingPoint) ||
+            this.maxSE.insert(existingPoint);
         });
-        this.nodes = [];
+        this.buffer = [];
       }
       return (
-        this.minNE.insert(node) ||
-        this.minNW.insert(node) ||
-        this.minSE.insert(node) ||
-        this.minSW.insert(node) ||
-        this.maxNE.insert(node) ||
-        this.maxNW.insert(node) ||
-        this.maxSW.insert(node) ||
-        this.maxSE.insert(node)
+        this.minNE.insert(point) ||
+        this.minNW.insert(point) ||
+        this.minSE.insert(point) ||
+        this.minSW.insert(point) ||
+        this.maxNE.insert(point) ||
+        this.maxNW.insert(point) ||
+        this.maxSW.insert(point) ||
+        this.maxSE.insert(point)
       );
     }
   }

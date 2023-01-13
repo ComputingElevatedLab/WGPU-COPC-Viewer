@@ -25,6 +25,7 @@ module.exports = {
     new webpack.DefinePlugin({
       tree: {
         leafCapacity: 16,
+        bufferCapacity: 16,
       },
     }),
   ],
