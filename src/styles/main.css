@@ -12,7 +12,7 @@ body {
 
 .note {
   position: absolute;
-  color: wheat;
+  color: rgb(32, 31, 30);
   top: 15px;
   left: 20px;
 }

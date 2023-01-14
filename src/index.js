@@ -53,7 +53,7 @@ function init() {
     1,
     100000
   );
-  camera.position.z = 500;
+  camera.position.set(800, -200, -1200);
 
   const geometry = new THREE.BoxGeometry(200, 200, 200);
   const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -203,12 +203,14 @@ postProcessing();
 function animate(delta) {
   delta = Math.max(delta, 0.1);
   requestAnimationFrame(animate);
+  console.log(controls.object.position);
   stats_mb.update();
   controls.autoRotate = true;
   controls.update();
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   composerScreen.render(delta);
   renderer.clear(false, true, false);
+  renderer.setClearColor(0x006432); // set the color you want
   renderer.setViewport(20, 50, 256, 256);
   composerMap.render(delta);
   // renderer.render(scene, camera);
