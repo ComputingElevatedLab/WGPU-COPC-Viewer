@@ -70,6 +70,7 @@ function init() {
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.listenToKeyEvents(window); // optional
+  controls.zoom = 3;
 
   fillArray(points, 3000, scene_width, scene_height, scene_depth);
   // points.forEach((element, index) => {

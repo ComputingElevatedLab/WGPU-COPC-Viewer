@@ -12,7 +12,7 @@ const yellow = new THREE.Color(0xe69b00);
 const grey = new THREE.Color(0xe0a387);
 const illusion = new THREE.Color(0xf1a784);
 
-const colors = [yellow, red, green, blue, green, grey, illusion];
+const colors = [yellow, red, illusion, blue, green, grey, illusion];
 // -------------------------------------
 
 class Point {

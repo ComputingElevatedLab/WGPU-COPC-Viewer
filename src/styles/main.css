@@ -20,3 +20,10 @@ body {
 .note title {
   font-size: 20px;
 }
+
+.bottom-note {
+  position: absolute;
+  bottom: 55px;
+  left: 50px;
+  font-weight: 600;
+}
