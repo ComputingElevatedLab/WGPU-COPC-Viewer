@@ -21,7 +21,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "* {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n  border: none;\r\n}\r\n\r\nbody {\r\n  overflow: hidden;\r\n  font-family: \"Poppins\", sans-serif;\r\n}\r\n\r\n.note {\r\n  position: absolute;\r\n  color: rgb(32, 31, 30);\r\n  top: 15px;\r\n  left: 20px;\r\n}\r\n\r\n.note title {\r\n  font-size: 20px;\r\n}\r\n", "",{"version":3,"sources":["webpack://./src/styles/main.css"],"names":[],"mappings":"AAAA;EACE,sBAAsB;EACtB,SAAS;EACT,UAAU;EACV,YAAY;AACd;;AAEA;EACE,gBAAgB;EAChB,kCAAkC;AACpC;;AAEA;EACE,kBAAkB;EAClB,sBAAsB;EACtB,SAAS;EACT,UAAU;AACZ;;AAEA;EACE,eAAe;AACjB","sourcesContent":["* {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n  border: none;\r\n}\r\n\r\nbody {\r\n  overflow: hidden;\r\n  font-family: \"Poppins\", sans-serif;\r\n}\r\n\r\n.note {\r\n  position: absolute;\r\n  color: rgb(32, 31, 30);\r\n  top: 15px;\r\n  left: 20px;\r\n}\r\n\r\n.note title {\r\n  font-size: 20px;\r\n}\r\n"],"sourceRoot":""}]);
+___CSS_LOADER_EXPORT___.push([module.id, "* {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n  border: none;\r\n}\r\n\r\nbody {\r\n  overflow: hidden;\r\n  font-family: \"Poppins\", sans-serif;\r\n}\r\n\r\n.note {\r\n  position: absolute;\r\n  color: rgb(32, 31, 30);\r\n  top: 15px;\r\n  left: 20px;\r\n}\r\n\r\n.note title {\r\n  font-size: 20px;\r\n}\r\n\r\n.bottom-note {\r\n  position: absolute;\r\n  bottom: 55px;\r\n  left: 50px;\r\n  font-weight: 600;\r\n}\r\n", "",{"version":3,"sources":["webpack://./src/styles/main.css"],"names":[],"mappings":"AAAA;EACE,sBAAsB;EACtB,SAAS;EACT,UAAU;EACV,YAAY;AACd;;AAEA;EACE,gBAAgB;EAChB,kCAAkC;AACpC;;AAEA;EACE,kBAAkB;EAClB,sBAAsB;EACtB,SAAS;EACT,UAAU;AACZ;;AAEA;EACE,eAAe;AACjB;;AAEA;EACE,kBAAkB;EAClB,YAAY;EACZ,UAAU;EACV,gBAAgB;AAClB","sourcesContent":["* {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n  border: none;\r\n}\r\n\r\nbody {\r\n  overflow: hidden;\r\n  font-family: \"Poppins\", sans-serif;\r\n}\r\n\r\n.note {\r\n  position: absolute;\r\n  color: rgb(32, 31, 30);\r\n  top: 15px;\r\n  left: 20px;\r\n}\r\n\r\n.note title {\r\n  font-size: 20px;\r\n}\r\n\r\n.bottom-note {\r\n  position: absolute;\r\n  bottom: 55px;\r\n  left: 50px;\r\n  font-weight: 600;\r\n}\r\n"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -666,6 +666,7 @@ function init() {
 
   controls = new three_addons_controls_OrbitControls_js__WEBPACK_IMPORTED_MODULE_4__.OrbitControls(camera, renderer.domElement);
   controls.listenToKeyEvents(window); // optional
+  controls.zoom = 3;
 
   (0,_helper__WEBPACK_IMPORTED_MODULE_2__.fillArray)(points, 3000, scene_width, scene_height, scene_depth);
   // points.forEach((element, index) => {
@@ -847,7 +848,7 @@ const yellow = new three__WEBPACK_IMPORTED_MODULE_1__.Color(0xe69b00);
 const grey = new three__WEBPACK_IMPORTED_MODULE_1__.Color(0xe0a387);
 const illusion = new three__WEBPACK_IMPORTED_MODULE_1__.Color(0xf1a784);
 
-const colors = [yellow, red, green, blue, green, grey, illusion];
+const colors = [yellow, red, illusion, blue, green, grey, illusion];
 // -------------------------------------
 
 class Point {
