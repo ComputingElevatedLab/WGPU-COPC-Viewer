@@ -7,7 +7,8 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import Stats from "three/examples/jsm/libs/stats.module";
-
+import { Copc } from "copc";
+import { traverseTreeWrapper } from "./passiveloader";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
 let camera, scene, renderer;
@@ -20,6 +21,7 @@ let qt;
 let mapCamera,
   mapSizeX = 128,
   mapSizeY = 64;
+let nodePages;
 
 let _width = window.innerWidth;
 let _height = window.innerHeight;
@@ -30,6 +32,7 @@ let right = 1024,
 
 let composerScreen;
 let composerMap;
+let isIntensityPresent;
 
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
@@ -46,7 +49,7 @@ let renderTarget = new THREE.WebGLRenderTarget(256, 256, parameters);
 let points = [];
 
 init();
-function init() {
+async function init() {
   camera = new THREE.PerspectiveCamera(
     70,
     window.innerWidth / window.innerHeight,
@@ -77,11 +80,12 @@ function init() {
   //   // scene.add(element.mesh);
   // });
   window.addEventListener("resize", onWindowResize);
+  await loadCOPC();
 }
 
 function findLevel(qt) {
   // traverse octre
-  let threshold = 1500;
+  let threshold = 9000;
 
   let cameraPosition = controls.object.position;
   // remove all bounding box 3d object after disposing before every check
@@ -96,7 +100,7 @@ function findLevel(qt) {
     if (node == null) {
       return null;
     }
-    boxGroup.add(node.box.mesh);
+    // boxGroup.add(node.box.mesh);
     if (!node.isDivided) {
       return [...node.points, ...node.buffer];
     }
@@ -116,7 +120,7 @@ function findLevel(qt) {
       node.maxSW,
       node.maxSE,
     ];
-    let results = [];
+    let results = [...node.points];
     for (let i = 0, _length = children.length; i < _length; i++) {
       let points = traverseTree(children[i]);
       results.push(...points);
@@ -189,6 +193,7 @@ points.forEach((element, index) => {
 let visiblePoints = [];
 controls.addEventListener("change", () => {
   visiblePoints = findLevel(qt);
+  console.log(visiblePoints.length);
   visiblePoints.forEach((element, index) => {
     // console.log("aded");
     boxGroup.add(points[element].mesh);
@@ -204,7 +209,7 @@ postProcessing();
 function animate(delta) {
   delta = Math.max(delta, 0.1);
   requestAnimationFrame(animate);
-  console.log(controls.object.position);
+  // console.log(controls.object.position);
   stats_mb.update();
   controls.autoRotate = true;
   controls.update();
@@ -216,7 +221,39 @@ function animate(delta) {
   composerMap.render(delta);
   // renderer.render(scene, camera);
 }
+async function loadCOPC() {
+  console.log("waiting");
+  let filename = "https://hobu-lidar.s3.amazonaws.com/sofi.copc.laz";
+  const copc = await Copc.create(filename);
+  let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+  let width = Math.abs(x_max - x_min);
+  let center_x = (x_min + x_max) / 2;
+  let center_y = (y_min + y_max) / 2;
+  let center_z = (z_min + z_max) / 2;
+  const { nodes: nodePages, pages: pages } = await Copc.loadHierarchyPage(
+    filename,
+    copc.info.rootHierarchyPage
+  );
+  const root = nodePages["0-0-0-0"];
+  let offsetMap = traverseTreeWrapper(
+    nodePages,
+    [0, 0, 0, 0],
+    center_x,
+    center_y,
+    center_z,
+    center_z
+  );
+  console.log(offsetMap);
+  const view = await Copc.loadPointDataView(filename, copc, root);
+  let dataHold = view.dimensions;
+  let exist = "not";
+  if (dataHold.Intensity) {
+    isIntensityPresent = true;
+    exist = "present";
+  }
+  console.log(`intensity is ${exist} on the dataset`);
+}
 
 window.requestAnimationFrame(animate);
 
-export { scene, scene_width, scene_height, scene_depth };
+export { scene, scene_width, scene_height, scene_depth, controls };

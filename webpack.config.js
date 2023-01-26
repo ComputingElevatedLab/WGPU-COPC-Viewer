@@ -1,10 +1,17 @@
 const webpack = require("webpack");
 const path = require("path");
+const lazPerf = require("laz-perf");
+console.log(lazPerf);
 module.exports = {
   entry: "./src/index.js",
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "docs"),
+  },
+  resolve: {
+    fallback: {
+      fs: false,
+    },
   },
   module: {
     rules: [
@@ -22,6 +29,7 @@ module.exports = {
   mode: "development",
   devtool: "cheap-module-source-map",
   plugins: [
+    // commonjs({ include: /node_modules\/laz-perf/ }),
     new webpack.DefinePlugin({
       tree: {
         leafCapacity: 16,
