@@ -12,6 +12,22 @@ let direction = [
   [1, 1, 1],
 ];
 
+async function* lazyLoad(offsetMap, url) {
+  while (offsetMap.length > 0) {
+    let fetchStart = offsetMap.pop();
+    let bytesofPointData = offsetMap.pop();
+    let fetchEnd = fetchStart + bytesofPointData;
+    let response = await fetch(url, {
+      headers: {
+        "content-type": "multipart/byteranges",
+        Range: `bytes=${fetchStart}-${fetchEnd}`,
+      },
+    });
+    let buffer = await response.arrayBuffer();
+    let view = new DataView(buffer);
+  }
+}
+
 function isLeadfNode(root, nodePages) {
   let [level, x, y, z] = root;
   for (let i = 0; i < direction.length; i++) {

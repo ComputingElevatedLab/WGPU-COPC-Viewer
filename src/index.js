@@ -7,7 +7,7 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { Copc } from "copc";
+import { Copc, Key } from "copc";
 import { traverseTreeWrapper } from "./passiveloader";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
@@ -85,7 +85,7 @@ async function init() {
 
 function findLevel(qt) {
   // traverse octre
-  let threshold = 9000;
+  let threshold = 10000;
 
   let cameraPosition = controls.object.position;
   // remove all bounding box 3d object after disposing before every check
@@ -100,7 +100,7 @@ function findLevel(qt) {
     if (node == null) {
       return null;
     }
-    // boxGroup.add(node.box.mesh);
+    boxGroup.add(node.box.mesh);
     if (!node.isDivided) {
       return [...node.points, ...node.buffer];
     }
@@ -108,7 +108,7 @@ function findLevel(qt) {
       new THREE.Vector3(node.box.x, node.box.y, node.box.z)
     );
     if (myDistanceFromCamera > threshold) {
-      return node.points;
+      return [...node.points, ...node.buffer];
     }
     let children = [
       node.minNE,
@@ -120,7 +120,7 @@ function findLevel(qt) {
       node.maxSW,
       node.maxSE,
     ];
-    let results = [...node.points];
+    let results = [...node.points, ...node.buffer];
     for (let i = 0, _length = children.length; i < _length; i++) {
       let points = traverseTree(children[i]);
       results.push(...points);
@@ -223,7 +223,7 @@ function animate(delta) {
 }
 async function loadCOPC() {
   console.log("waiting");
-  let filename = "https://hobu-lidar.s3.amazonaws.com/sofi.copc.laz";
+  let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await Copc.create(filename);
   let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
   let width = Math.abs(x_max - x_min);
@@ -234,6 +234,15 @@ async function loadCOPC() {
     filename,
     copc.info.rootHierarchyPage
   );
+
+  console.log(pages);
+  let total = 0;
+  for (let key in pages) {
+    total += pages[key].pointCount;
+  }
+  console.log("toatl is", total);
+  console.log(copc);
+  console.log(nodePages);
   const root = nodePages["0-0-0-0"];
   let offsetMap = traverseTreeWrapper(
     nodePages,
@@ -243,8 +252,8 @@ async function loadCOPC() {
     center_z,
     center_z
   );
-  console.log(offsetMap);
   const view = await Copc.loadPointDataView(filename, copc, root);
+  console.log(view);
   let dataHold = view.dimensions;
   let exist = "not";
   if (dataHold.Intensity) {
