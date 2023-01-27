@@ -17,6 +17,7 @@ let boxGroup = new THREE.Group();
 let scene_width = 1000;
 let scene_height = 1000;
 let scene_depth = 1000;
+let scale = 1;
 let qt;
 let mapCamera,
   mapSizeX = 128,
@@ -35,7 +36,7 @@ let composerMap;
 let isIntensityPresent;
 
 scene = new THREE.Scene();
-scene.background = new THREE.Color(0xcccccc);
+scene.background = new THREE.Color(0x000000);
 let parameters = {
   minFilter: THREE.LinearFilter,
   magFilter: THREE.LinearFilter,
@@ -85,7 +86,7 @@ async function init() {
 
 function findLevel(qt) {
   // traverse octre
-  let threshold = 10000;
+  let threshold = 100;
 
   let cameraPosition = controls.object.position;
   // remove all bounding box 3d object after disposing before every check
@@ -191,14 +192,12 @@ points.forEach((element, index) => {
   }
 });
 let visiblePoints = [];
-controls.addEventListener("change", () => {
-  visiblePoints = findLevel(qt);
-  console.log(visiblePoints.length);
-  visiblePoints.forEach((element, index) => {
-    // console.log("aded");
-    boxGroup.add(points[element].mesh);
-  });
-});
+// controls.addEventListener("change", () => {
+//   visiblePoints = findLevel(qt);
+//   visiblePoints.forEach((element, index) => {
+//     boxGroup.add(points[element].mesh);
+//   });
+// });
 
 const stats_mb = Stats();
 stats_mb.domElement.style.cssText = "position:absolute;top:50px;right:50px;";
@@ -211,7 +210,7 @@ function animate(delta) {
   requestAnimationFrame(animate);
   // console.log(controls.object.position);
   stats_mb.update();
-  controls.autoRotate = true;
+  controls.autoRotate = false;
   controls.update();
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   composerScreen.render(delta);
@@ -225,6 +224,7 @@ async function loadCOPC() {
   console.log("waiting");
   let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await Copc.create(filename);
+  scale = copc.header.scale[0];
   let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
   let width = Math.abs(x_max - x_min);
   let center_x = (x_min + x_max) / 2;
@@ -235,32 +235,57 @@ async function loadCOPC() {
     copc.info.rootHierarchyPage
   );
 
-  console.log(pages);
+  console.log(copc);
   let total = 0;
   for (let key in pages) {
     total += pages[key].pointCount;
   }
   console.log("toatl is", total);
-  console.log(copc);
-  console.log(nodePages);
   const root = nodePages["0-0-0-0"];
-  let offsetMap = traverseTreeWrapper(
+  let keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
     center_x,
     center_y,
     center_z,
-    center_z
+    center_z,
+    scale
   );
-  const view = await Copc.loadPointDataView(filename, copc, root);
-  console.log(view);
-  let dataHold = view.dimensions;
-  let exist = "not";
-  if (dataHold.Intensity) {
-    isIntensityPresent = true;
-    exist = "present";
+
+  let getters;
+  function getXyzi(index) {
+    return getters.map((get) => get(index));
   }
-  console.log(`intensity is ${exist} on the dataset`);
+  let pointsArray = [];
+  var geometry = new THREE.BufferGeometry();
+  let positions = [];
+
+  for (let m = 0; m < keyCountMap.length; m = m + 20) {
+    console.log(m, keyCountMap.length);
+    let myRoot = nodePages[keyCountMap[m]];
+    const view = await Copc.loadPointDataView(filename, copc, myRoot);
+    getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
+    for (let j = 0; j < Math.floor(keyCountMap[m + 1] / 100); j++) {
+      let returnPoint = getXyzi(j);
+      // pointsArray.push(...getXyzi(j));
+      positions.push(
+        returnPoint[0] - x_min - 0.5 * width,
+        returnPoint[1] - y_min - 0.5 * width,
+        returnPoint[2] - z_min - 0.5 * width
+      );
+    }
+  }
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
+  var material = new THREE.PointsMaterial({ size: 15, color: 0xffffff });
+  console.log(positions);
+  let p = new THREE.Points(geometry, material);
+
+  scene.add(p);
+  const view = await Copc.loadPointDataView(filename, copc, root);
+  console.log(scene.children);
 }
 
 window.requestAnimationFrame(animate);

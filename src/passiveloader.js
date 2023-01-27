@@ -47,23 +47,23 @@ function traverseTreeWrapper(
   center_x,
   center_y,
   center_z,
-  width
+  width,
+  scale
 ) {
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
+    let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
     if (isLeadfNode(root, nodePages)) {
-      return [nodePages[key].pointDataOffset, nodePages[key].pointDataLength];
+      return [key, nodePages[key].pointCount];
     }
     let cameraPosition = controls.object.position;
     let myDistanceFromCamera = cameraPosition.distanceTo(
-      new THREE.Vector3(center_x, center_x, center_x)
+      new THREE.Vector3(center_x, scale * center_x, scale * center_x)
     );
-    if (myDistanceFromCamera > 1000000000) {
+    if (myDistanceFromCamera > 500000 / scale) {
       return [];
     }
-    let newLevel = level + 1;
-
     let x_left = center_x - width / 2;
     let x_right = center_x + width / 2;
     let y_top = center_y + width / 2;
@@ -71,14 +71,11 @@ function traverseTreeWrapper(
     let z_near = center_z - width / 2;
     let z_far = center_z + width / 2;
 
-    let result = [
-      nodePages[key].pointDataOffset,
-      nodePages[key].pointDataLength,
-    ];
+    let result = [key, nodePages[key].pointCount];
     direction.forEach((element, index) => {
       let [dx, dy, dz] = element;
       let key = `${newLevel}-${2 * x + dx}-${2 * y + dy}-${2 * z + dz}`;
-      if (!(key in nodePages)) {
+      if (!(key in nodePages && nodePages[key].pointCount > 0)) {
         return;
       }
       center_x = x_left;
@@ -95,16 +92,22 @@ function traverseTreeWrapper(
       }
       let result1 = traverseTree(
         [newLevel, 2 * x + dx, 2 * y + dy, 2 * z + dz],
-        x_left,
-        y_bottom,
-        z_near,
+        center_x,
+        center_y,
+        center_z,
         width / 2
       );
       result.push(...result1);
     });
     return result;
   }
-  return traverseTree(root, center_x, center_y, center_z, width);
+  return traverseTree(
+    root,
+    center_x / scale,
+    center_y / scale,
+    center_z / scale,
+    width / scale
+  );
 }
 
 export { traverseTreeWrapper };
