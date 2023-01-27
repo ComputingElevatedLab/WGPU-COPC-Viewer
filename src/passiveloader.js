@@ -59,9 +59,9 @@ function traverseTreeWrapper(
     }
     let cameraPosition = controls.object.position;
     let myDistanceFromCamera = cameraPosition.distanceTo(
-      new THREE.Vector3(center_x, scale * center_x, scale * center_x)
+      new THREE.Vector3(center_x, center_y, center_z)
     );
-    if (myDistanceFromCamera > 500000 / scale) {
+    if (myDistanceFromCamera > 400000 / scale) {
       return [];
     }
     let x_left = center_x - width / 2;
