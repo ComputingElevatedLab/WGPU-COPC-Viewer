@@ -222,7 +222,7 @@ function animate(delta) {
 }
 async function loadCOPC() {
   console.log("waiting");
-  let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
+  let filename = "https://hobu-lidar.s3.amazonaws.com/sofi.copc.laz";
   const copc = await Copc.create(filename);
   scale = copc.header.scale[0];
   let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
@@ -261,11 +261,11 @@ async function loadCOPC() {
   let positions = [];
 
   for (let m = 0; m < keyCountMap.length; m = m + 20) {
-    console.log(m, keyCountMap.length);
+    console.log(m, keyCountMap[m], keyCountMap.length);
     let myRoot = nodePages[keyCountMap[m]];
     const view = await Copc.loadPointDataView(filename, copc, myRoot);
     getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
-    for (let j = 0; j < Math.floor(keyCountMap[m + 1] / 100); j++) {
+    for (let j = 0; j < keyCountMap[m + 1]; j++) {
       let returnPoint = getXyzi(j);
       // pointsArray.push(...getXyzi(j));
       positions.push(
@@ -279,7 +279,7 @@ async function loadCOPC() {
     "position",
     new THREE.Float32BufferAttribute(positions, 3)
   );
-  var material = new THREE.PointsMaterial({ size: 15, color: 0xffffff });
+  var material = new THREE.PointsMaterial({ size: 2, color: 0xffffff });
   console.log(positions);
   let p = new THREE.Points(geometry, material);
 
