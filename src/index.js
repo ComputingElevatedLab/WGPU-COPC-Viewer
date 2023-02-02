@@ -8,9 +8,15 @@ import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { Copc, Key } from "copc";
+const fetchWorker = new Worker("fetcher.js");
+
 import { traverseTreeWrapper } from "./passiveloader";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
+
+const clock = new THREE.Clock();
+fetchWorker.postMessage("hello");
+
 let camera, scene, renderer;
 let mesh, controls;
 let boxGroup = new THREE.Group();
@@ -36,7 +42,7 @@ let composerMap;
 let isIntensityPresent;
 
 scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
+scene.background = new THREE.Color(0xcccccc);
 let parameters = {
   minFilter: THREE.LinearFilter,
   magFilter: THREE.LinearFilter,
@@ -215,14 +221,14 @@ function animate(delta) {
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   composerScreen.render(delta);
   renderer.clear(false, true, false);
-  renderer.setClearColor(0x006432); // set the color you want
+  renderer.setClearColor(0xffffff); // set the color you want
   renderer.setViewport(20, 50, 256, 256);
   composerMap.render(delta);
   // renderer.render(scene, camera);
 }
 async function loadCOPC() {
   console.log("waiting");
-  let filename = "https://hobu-lidar.s3.amazonaws.com/sofi.copc.laz";
+  let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await Copc.create(filename);
   scale = copc.header.scale[0];
   let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
@@ -252,35 +258,69 @@ async function loadCOPC() {
     scale
   );
 
-  let getters;
-  function getXyzi(index) {
-    return getters.map((get) => get(index));
-  }
-  let pointsArray = [];
-  var geometry = new THREE.BufferGeometry();
-  let positions = [];
-
-  for (let m = 0; m < keyCountMap.length; m = m + 20) {
-    console.log(m, keyCountMap[m], keyCountMap.length);
-    let myRoot = nodePages[keyCountMap[m]];
-    const view = await Copc.loadPointDataView(filename, copc, myRoot);
-    getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
-    for (let j = 0; j < keyCountMap[m + 1]; j++) {
-      let returnPoint = getXyzi(j);
-      // pointsArray.push(...getXyzi(j));
+  const readPoints = async (id, getters) => {
+    return new Promise((resolve, reject) => {
+      let returnPoint = getXyzi(id, getters);
       positions.push(
         returnPoint[0] - x_min - 0.5 * width,
         returnPoint[1] - y_min - 0.5 * width,
         returnPoint[2] - z_min - 0.5 * width
       );
-    }
+      const vx = (returnPoint[3] / 65535) * 255;
+      color.setRGB(vx, vx, vx);
+      colors.push(color.r, color.g, color.b);
+      return resolve(true);
+    });
+  };
+
+  function getXyzi(index, getters) {
+    return getters.map((get) => get(index));
   }
+  let pointsArray = [];
+  var geometry = new THREE.BufferGeometry();
+  let positions = [];
+  let colors = [];
+  const color = new THREE.Color();
+  let promises = [];
+  clock.getDelta();
+  for (let m = 0; m < keyCountMap.length; m += 2) {
+    // console.log(m, keyCountMap[m], keyCountMap.length);
+    promises.push(
+      (async () => {
+        let myRoot = nodePages[keyCountMap[m]];
+        const view = await Copc.loadPointDataView(filename, copc, myRoot);
+        let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
+        let chunkCount = 2;
+        let totalCalled = 0;
+        let innerPromise = [];
+        for (let j = 0; j < keyCountMap[m + 1]; j += chunkCount) {
+          innerPromise.push(
+            (async () => {
+              let remaining = keyCountMap[m + 1] - totalCalled;
+              let localChunkCount = Math.min(chunkCount, remaining);
+              totalCalled += localChunkCount;
+              const pointTemp = new Array(localChunkCount).fill(null);
+              const redPointPromise = pointTemp.map((element, index) =>
+                readPoints(index + j, getters)
+              );
+              await Promise.all(readPoints);
+            })()
+          );
+          const done = await Promise.all(innerPromise);
+        }
+      })()
+    );
+  }
+  await Promise.all(promises);
+  let delta = clock.getDelta();
+  console.log(delta);
+
   geometry.setAttribute(
     "position",
     new THREE.Float32BufferAttribute(positions, 3)
   );
-  var material = new THREE.PointsMaterial({ size: 2, color: 0xffffff });
-  console.log(positions);
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  var material = new THREE.PointsMaterial({ size: 2, vertexColors: true });
   let p = new THREE.Points(geometry, material);
 
   scene.add(p);

@@ -54,12 +54,13 @@ function traverseTreeWrapper(
     let [level, x, y, z] = root;
     let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
-    if (level > 3) {
+    if (level > 2) {
       return [];
     }
-    if (isLeadfNode(root, nodePages)) {
-      return [key, nodePages[key].pointCount];
-    }
+    // if (isLeadfNode(root, nodePages)) {
+    //   console.log("i am leaf node", root);
+    //   return [key, nodePages[key].pointCount];
+    // }
     let cameraPosition = controls.object.position;
     let myDistanceFromCamera = cameraPosition.distanceTo(
       new THREE.Vector3(center_x, center_y, center_z)
@@ -77,11 +78,11 @@ function traverseTreeWrapper(
       let [dx, dy, dz] = element;
       let key = `${newLevel}-${2 * x + dx}-${2 * y + dy}-${2 * z + dz}`;
       if (!(key in nodePages && nodePages[key].pointCount > 0)) {
-        return;
+        return [];
       }
       center_x = x_left;
       center_y = y_bottom;
-      center_z = z_near;
+      center_z = z_far;
       if (dx == 1) {
         center_x = x_right;
       }
@@ -89,7 +90,7 @@ function traverseTreeWrapper(
         center_y = y_top;
       }
       if (dz == 1) {
-        center_z = z_far;
+        center_z = z_near;
       }
       let result1 = traverseTree(
         [newLevel, 2 * x + dx, 2 * y + dy, 2 * z + dz],
