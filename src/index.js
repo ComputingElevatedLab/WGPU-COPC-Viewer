@@ -319,6 +319,13 @@ async function loadCOPC() {
   // while (postMessageRes == 100) {
   //   console.log("loading data");
   // }
+
+  const syncThread = async () => {
+    await Promise.all(promises).then((response) => {
+      console.log("one chunk finish");
+    });
+  };
+
   let chunk = 3;
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
@@ -332,12 +339,12 @@ async function loadCOPC() {
       m += 2;
       console.log(doneCount);
       if (doneCount % MAX_WORKERS == 0) {
-        Promise.all(promises).then((response) => {
-          console.log("one chunk finish");
-        });
+        await syncThread();
+        console.log("i am done");
       }
     }
   }
+
   geometry.setAttribute(
     "position",
     new THREE.Float32BufferAttribute(positions, 3)
