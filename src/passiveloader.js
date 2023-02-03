@@ -54,13 +54,10 @@ function traverseTreeWrapper(
     let [level, x, y, z] = root;
     let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
-    if (level > 2) {
+    if (level > 4) {
       return [];
     }
-    // if (isLeadfNode(root, nodePages)) {
-    //   console.log("i am leaf node", root);
-    //   return [key, nodePages[key].pointCount];
-    // }
+
     let cameraPosition = controls.object.position;
     let myDistanceFromCamera = cameraPosition.distanceTo(
       new THREE.Vector3(center_x, center_y, center_z)

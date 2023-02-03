@@ -8,14 +8,55 @@ import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { Copc, Key } from "copc";
-const fetchWorker = new Worker("fetcher.js");
+import Worker from "./worker/fetcher.worker.js";
 
 import { traverseTreeWrapper } from "./passiveloader";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
-
+let postMessageRes = 100;
+let positions = [];
+let colors = [];
+let workerCount = 0;
 const clock = new THREE.Clock();
-fetchWorker.postMessage("hello");
+const workers = new Array(1).fill(null);
+let TotalCount = 0;
+const MAX_WORKERS = 3;
+let promises = [];
+let nodePagesString;
+let pagesString;
+let copcString;
+
+function createWorker(data1, data2) {
+  return new Promise((resolve) => {
+    let worker = new Worker();
+    worker.onmessage = (event) => {
+      postMessageRes = event.data;
+      if (postMessageRes == 200) {
+        worker.postMessage([
+          nodePagesString,
+          pagesString,
+          copcString,
+          data1,
+          data2,
+        ]);
+      } else {
+        workerCount += 1;
+        let position = postMessageRes[0];
+        let color = postMessageRes[1];
+        for (let i = 0; i < position.length; i++) {
+          positions.push(position[i]);
+          colors.push(colors[i]);
+        }
+        if (workerCount == MAX_WORKERS) {
+          worker.terminate();
+          workerCount = 0;
+          promises = [];
+        }
+        resolve(true);
+      }
+    };
+  });
+}
 
 let camera, scene, renderer;
 let mesh, controls;
@@ -87,7 +128,7 @@ async function init() {
   //   // scene.add(element.mesh);
   // });
   window.addEventListener("resize", onWindowResize);
-  await loadCOPC();
+  // await loadCOPC();
 }
 
 function findLevel(qt) {
@@ -226,10 +267,18 @@ function animate(delta) {
   composerMap.render(delta);
   // renderer.render(scene, camera);
 }
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+let keyCountMap;
 async function loadCOPC() {
-  console.log("waiting");
+  clock.getDelta();
   let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await Copc.create(filename);
+  copcString = JSON.stringify(copc);
+  console.log("loading time is", clock.getDelta());
   scale = copc.header.scale[0];
   let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
   let width = Math.abs(x_max - x_min);
@@ -240,15 +289,16 @@ async function loadCOPC() {
     filename,
     copc.info.rootHierarchyPage
   );
+  nodePagesString = JSON.stringify(nodePages);
+  pagesString = JSON.stringify(pages);
 
-  console.log(copc);
   let total = 0;
   for (let key in pages) {
     total += pages[key].pointCount;
   }
   console.log("toatl is", total);
   const root = nodePages["0-0-0-0"];
-  let keyCountMap = traverseTreeWrapper(
+  keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
     center_x,
@@ -258,63 +308,36 @@ async function loadCOPC() {
     scale
   );
 
-  const readPoints = async (id, getters) => {
-    return new Promise((resolve, reject) => {
-      let returnPoint = getXyzi(id, getters);
-      positions.push(
-        returnPoint[0] - x_min - 0.5 * width,
-        returnPoint[1] - y_min - 0.5 * width,
-        returnPoint[2] - z_min - 0.5 * width
-      );
-      const vx = (returnPoint[3] / 65535) * 255;
-      color.setRGB(vx, vx, vx);
-      colors.push(color.r, color.g, color.b);
-      return resolve(true);
-    });
-  };
-
-  function getXyzi(index, getters) {
-    return getters.map((get) => get(index));
-  }
+  TotalCount = keyCountMap.length;
   let pointsArray = [];
   var geometry = new THREE.BufferGeometry();
-  let positions = [];
   let colors = [];
   const color = new THREE.Color();
-  let promises = [];
-  clock.getDelta();
-  for (let m = 0; m < keyCountMap.length; m += 2) {
-    // console.log(m, keyCountMap[m], keyCountMap.length);
-    promises.push(
-      (async () => {
-        let myRoot = nodePages[keyCountMap[m]];
-        const view = await Copc.loadPointDataView(filename, copc, myRoot);
-        let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
-        let chunkCount = 2;
-        let totalCalled = 0;
-        let innerPromise = [];
-        for (let j = 0; j < keyCountMap[m + 1]; j += chunkCount) {
-          innerPromise.push(
-            (async () => {
-              let remaining = keyCountMap[m + 1] - totalCalled;
-              let localChunkCount = Math.min(chunkCount, remaining);
-              totalCalled += localChunkCount;
-              const pointTemp = new Array(localChunkCount).fill(null);
-              const redPointPromise = pointTemp.map((element, index) =>
-                readPoints(index + j, getters)
-              );
-              await Promise.all(readPoints);
-            })()
-          );
-          const done = await Promise.all(innerPromise);
-        }
-      })()
-    );
-  }
-  await Promise.all(promises);
-  let delta = clock.getDelta();
-  console.log(delta);
 
+  clock.getDelta();
+
+  // while (postMessageRes == 100) {
+  //   console.log("loading data");
+  // }
+  let chunk = 3;
+  let totalNodes = keyCountMap.length / 2;
+  let doneCount = 0;
+
+  for (let m = 0; m < keyCountMap.length; ) {
+    let remaining = totalNodes - doneCount;
+    let numbWorker = Math.min(chunk, remaining);
+    for (let i = 0; i < numbWorker; i++) {
+      promises.push(createWorker(keyCountMap[m], keyCountMap[m + 1]));
+      doneCount++;
+      m += 2;
+      console.log(doneCount);
+      if (doneCount % MAX_WORKERS == 0) {
+        Promise.all(promises).then((response) => {
+          console.log("one chunk finish");
+        });
+      }
+    }
+  }
   geometry.setAttribute(
     "position",
     new THREE.Float32BufferAttribute(positions, 3)
@@ -324,10 +347,11 @@ async function loadCOPC() {
   let p = new THREE.Points(geometry, material);
 
   scene.add(p);
-  const view = await Copc.loadPointDataView(filename, copc, root);
+  // const view = await Copc.loadPointDataView(filename, copc, root);
   console.log(scene.children);
 }
 
+loadCOPC();
 window.requestAnimationFrame(animate);
 
-export { scene, scene_width, scene_height, scene_depth, controls };
+export { scene, scene_width, scene_height, scene_depth, controls, loadCOPC };

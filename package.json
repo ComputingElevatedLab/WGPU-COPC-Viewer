@@ -21,6 +21,7 @@
   "dependencies": {
     "copc": "^0.0.4",
     "cross-fetch": "^3.1.5",
+    "json-fn": "^1.1.1",
     "laz-perf": "^0.0.5",
     "three": "^0.148.0",
     "webpack": "^5.75.0",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "css-loader": "^6.7.3",
-    "style-loader": "^3.3.1"
+    "style-loader": "^3.3.1",
+    "worker-loader": "^3.0.8"
   }
 }

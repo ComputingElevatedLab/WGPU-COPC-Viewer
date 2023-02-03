@@ -19,6 +19,11 @@ module.exports = {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
       },
+      {
+        test: /\.worker\.js$/,
+        exclude: /node_modules/,
+        use: "worker-loader",
+      },
     ],
   },
   devServer: {
