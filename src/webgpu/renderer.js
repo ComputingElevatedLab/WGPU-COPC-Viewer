@@ -1,8 +1,9 @@
+import { vs, fs } from "../shaders/renderShader.js";
+
 let adapter = null;
 let device = null;
 let worldViewProj = mat4.create();
 var projView = mat4.create();
-
 let proj;
 let camera;
 let context = null;
@@ -13,10 +14,12 @@ let positionBuffer;
 let colorBuffer;
 let MVP_Buffer;
 var lasInfoBuffer;
-let shadowDepthTexture;
 let commandEncoder;
 let renderPassDescriptor;
+let renderDepthTexture;
 let canvas;
+let numPoints;
+let positions, colors;
 
 function configureSwapChain(device) {
   context.configure({
@@ -41,6 +44,7 @@ async function init() {
   if (!adapter) return goToFallback();
   device = await adapter.requestDevice();
   if (!device) return goToFallback();
+  console.log("device is", device);
   // device.lost.then(recoverFromDeviceLoss);
 
   canvas = document.getElementById("screen-canvas");
@@ -58,11 +62,12 @@ async function init() {
 
 async function intRenderPipeline() {
   let Vertex_Buffer_Descriptor = [{}];
-
+  console.log(vs);
   let vs_module = device.createShaderModule({
     label: "vertex shader",
     code: vs,
   });
+
   let fs_module = device.createShaderModule({
     label: "fragment shader",
     code: fs,
@@ -73,10 +78,11 @@ async function intRenderPipeline() {
     offset: 0,
     format: "float32x3",
   };
+
   let colorAttribute_Desc = {
     shaderLocation: 1,
     offset: 0,
-    format: "float32x4",
+    format: "float32x3",
   };
 
   let Vertex_Shader_Descriptor = {
@@ -88,7 +94,7 @@ async function intRenderPipeline() {
         attributes: [positionAttribute_Desc],
       },
       {
-        arrayStride: 16,
+        arrayStride: 12,
         attributes: [colorAttribute_Desc],
       },
     ],
@@ -125,8 +131,8 @@ async function intRenderPipeline() {
 async function initVertexBuffer() {
   // lasFile.colors
   // lasFile.positions
-  let totalNumberOfPoints = lasFile.numLoadedPoints;
-
+  let totalNumberOfPoints = numPoints;
+  console.log(totalNumberOfPoints);
   positionBuffer = device.createBuffer({
     label: "vertex position buffer",
     size: totalNumberOfPoints * 12,
@@ -135,38 +141,22 @@ async function initVertexBuffer() {
   });
 
   let mapArrayPosition = new Float32Array(positionBuffer.getMappedRange());
-  mapArrayPosition.set(lasFile.positions);
+  mapArrayPosition.set(positions);
   positionBuffer.unmap();
 
   colorBuffer = device.createBuffer({
     label: "vertex color buffer",
-    size: totalNumberOfPoints * 16,
+    size: totalNumberOfPoints * 12,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
   });
 
   let mapArrayColor = new Float32Array(colorBuffer.getMappedRange());
-  console.log(lasFile.Color32);
-  mapArrayColor.set(lasFile.Color32);
+  mapArrayColor.set(colors);
   colorBuffer.unmap();
 }
 
 function initUniform() {
-  lasInfoBuffer = device.createBuffer({
-    size: 12 * 4,
-    usage: GPUBufferUsage.UNIFORM,
-    mappedAtCreation: true,
-  });
-  {
-    var mapping = lasInfoBuffer.getMappedRange();
-    var arr = new Float32Array(mapping);
-    arr.set([lasFile.bounds[0], lasFile.bounds[1], lasFile.bounds[2]]);
-    arr.set([lasFile.bounds[3], lasFile.bounds[4], lasFile.bounds[5]], 4);
-    arr.set([0.5], 8);
-    new Uint32Array(mapping).set([1], 9);
-  }
-  lasInfoBuffer.unmap();
-
   MVP_Buffer = device.createBuffer({
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -184,7 +174,9 @@ function initUniform() {
     0.1,
     1000
   );
+
   var controller = new Controller();
+
   controller.mousemove = function (prev, cur, evt) {
     if (evt.buttons == 1) {
       // console.log("rotate");
@@ -219,19 +211,13 @@ function initUniform() {
 
 async function createBindGroups() {
   mvp_BG = device.createBindGroup({
-    lbael: "uniform bindgroup - rendering",
+    label: "uniform bindgroup - rendering",
     layout: renderPipeline.getBindGroupLayout(0),
     entries: [
       {
         binding: 0,
         resource: {
           buffer: MVP_Buffer,
-        },
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: lasInfoBuffer,
         },
       },
     ],
@@ -303,11 +289,16 @@ async function update(timestamp) {
 async function stages() {
   await init();
   await intRenderPipeline();
+}
+
+async function renderStages(position, color) {
+  numPoints = position.length / 3;
+  positions = position;
+  colors = color;
   await initVertexBuffer();
   await initUniform();
   await createBindGroups();
   await createDepthBuffer();
-  commandEncoder = device.createCommandEncoder();
   requestAnimationFrame(render);
 }
 
@@ -334,8 +325,12 @@ function render(timestamp) {
   renderPass.setBindGroup(0, mvp_BG);
   renderPass.setVertexBuffer(0, positionBuffer);
   renderPass.setVertexBuffer(1, colorBuffer);
-  renderPass.draw(lasFile.numLoadedPoints, 1, 0, 0);
+  renderPass.draw(numPoints, 1, 0, 0);
   renderPass.end();
   device.queue.submit([commandEncoder.finish()]);
   requestAnimationFrame(render);
 }
+
+stages();
+
+export { renderStages };

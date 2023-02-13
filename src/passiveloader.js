@@ -54,7 +54,7 @@ function traverseTreeWrapper(
     let [level, x, y, z] = root;
     let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
-    if (level > 4) {
+    if (level > 1) {
       return [];
     }
 

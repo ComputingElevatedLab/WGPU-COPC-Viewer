@@ -4,16 +4,16 @@ const color = new THREE.Color();
 const colors = [];
 let firstTime = true;
 var nodePages, pages, receivedData, copc;
-let x_min, y_min, z_min, x_max, y_max, z_max, width;
+let x_min, y_min, z_min, x_max, y_max, z_max, widthx, widthy, widthz;
 let positions = [];
 let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
 
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);
   positions.push(
-    returnPoint[0] - x_min - 0.5 * width,
-    returnPoint[1] - y_min - 0.5 * width,
-    returnPoint[2] - z_min - 0.5 * width
+    returnPoint[0] - x_min - 0.5 * widthx,
+    returnPoint[1] - y_min - 0.5 * widthy,
+    returnPoint[2] - z_min - 0.5 * widthz
   );
   const vx = (returnPoint[3] / 65535) * 255;
   color.setRGB(vx, vx, vx);
@@ -65,6 +65,11 @@ onmessage = function (message) {
   let mapIndex = message.data[3];
   let pointCount = message.data[4];
   let myRoot = nodes[mapIndex];
-  // console.log(mapIndex);
+  x_min = message.data[5][0];
+  y_min = message.data[5][1];
+  z_min = message.data[5][2];
+  widthx = message.data[5][3];
+  widthy = message.data[5][4];
+  widthz = message.data[5][5];
   loadData(nodes, pages, copc, myRoot, pointCount);
 };

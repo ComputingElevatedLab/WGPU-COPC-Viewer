@@ -9,6 +9,7 @@ import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { Copc, Key } from "copc";
 import Worker from "./worker/fetcher.worker.js";
+import { renderStages } from "./webgpu/renderer";
 
 import { traverseTreeWrapper } from "./passiveloader";
 import "./styles/main.css";
@@ -20,11 +21,12 @@ let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
 let TotalCount = 0;
-const MAX_WORKERS = 3;
+const MAX_WORKERS = 2;
 let promises = [];
 let nodePagesString;
 let pagesString;
 let copcString;
+let x_min, y_min, z_min, x_max, y_max, z_max, widthx, widthy, widthz;
 
 function createWorker(data1, data2) {
   return new Promise((resolve) => {
@@ -38,6 +40,7 @@ function createWorker(data1, data2) {
           copcString,
           data1,
           data2,
+          [x_min, y_min, z_min, widthx, widthy, widthz],
         ]);
       } else {
         workerCount += 1;
@@ -45,13 +48,13 @@ function createWorker(data1, data2) {
         let color = postMessageRes[1];
         for (let i = 0; i < position.length; i++) {
           positions.push(position[i]);
-          colors.push(colors[i]);
+          colors.push(color[i]);
         }
         if (workerCount == MAX_WORKERS) {
-          worker.terminate();
           workerCount = 0;
           promises = [];
         }
+        worker.terminate();
         resolve(true);
       }
     };
@@ -280,8 +283,10 @@ async function loadCOPC() {
   copcString = JSON.stringify(copc);
   console.log("loading time is", clock.getDelta());
   scale = copc.header.scale[0];
-  let [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
-  let width = Math.abs(x_max - x_min);
+  [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+  widthx = Math.abs(x_max - x_min);
+  widthy = Math.abs(y_max - y_min);
+  widthz = Math.abs(z_max - z_min);
   let center_x = (x_min + x_max) / 2;
   let center_y = (y_min + y_max) / 2;
   let center_z = (z_min + z_max) / 2;
@@ -311,8 +316,6 @@ async function loadCOPC() {
   TotalCount = keyCountMap.length;
   let pointsArray = [];
   var geometry = new THREE.BufferGeometry();
-  let colors = [];
-  const color = new THREE.Color();
 
   clock.getDelta();
 
@@ -326,36 +329,40 @@ async function loadCOPC() {
     });
   };
 
-  let chunk = 3;
+  let chunk = 2;
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
-
+  console.log(clock.getDelta());
   for (let m = 0; m < keyCountMap.length; ) {
     let remaining = totalNodes - doneCount;
     let numbWorker = Math.min(chunk, remaining);
     for (let i = 0; i < numbWorker; i++) {
+      console.log("i am entering first time");
       promises.push(createWorker(keyCountMap[m], keyCountMap[m + 1]));
       doneCount++;
       m += 2;
       console.log(doneCount);
       if (doneCount % MAX_WORKERS == 0) {
         await syncThread();
-        console.log("i am done");
+        // console.log("i am done");
       }
     }
   }
+  console.log(clock.getDelta());
 
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  var material = new THREE.PointsMaterial({ size: 2, vertexColors: true });
-  let p = new THREE.Points(geometry, material);
-
-  scene.add(p);
-  // const view = await Copc.loadPointDataView(filename, copc, root);
-  console.log(scene.children);
+  // render by WebGPU
+  console.log(colors);
+  renderStages(positions, colors);
+  // ----------------------------------------------------------------------------
+  // geometry.setAttribute(
+  //   "position",
+  //   new THREE.Float32BufferAttribute(positions, 3)
+  // );
+  // geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  // var material = new THREE.PointsMaterial({ size: 2, vertexColors: true });
+  // let p = new THREE.Points(geometry, material);
+  // scene.add(p);
+  // -----------------------------------------------------------------------------
 }
 
 loadCOPC();
