@@ -15,7 +15,7 @@ const readPoints = (id, getters) => {
     returnPoint[1] - y_min - 0.5 * widthy,
     returnPoint[2] - z_min - 0.5 * widthz
   );
-  const vx = (returnPoint[3] / 65535) * 255;
+  const vx = returnPoint[3] / 65535;
   color.setRGB(vx, vx, vx);
   colors.push(color.r, color.g, color.b);
   firstTime = false;

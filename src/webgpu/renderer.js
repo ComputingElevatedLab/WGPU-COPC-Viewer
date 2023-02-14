@@ -53,8 +53,8 @@ async function init() {
     console.error("coould not get context from the canvas");
     return;
   }
-  canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
-  canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+  canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
+  canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
 
   swapChainFormat = navigator.gpu.getPreferredCanvasFormat();
   configureSwapChain(device);
@@ -62,7 +62,6 @@ async function init() {
 
 async function intRenderPipeline() {
   let Vertex_Buffer_Descriptor = [{}];
-  console.log(vs);
   let vs_module = device.createShaderModule({
     label: "vertex shader",
     code: vs,
@@ -129,8 +128,6 @@ async function intRenderPipeline() {
 }
 
 async function initVertexBuffer() {
-  // lasFile.colors
-  // lasFile.positions
   let totalNumberOfPoints = numPoints;
   console.log(totalNumberOfPoints);
   positionBuffer = device.createBuffer({
@@ -237,7 +234,7 @@ async function encodedCommand() {
 
   let colorAttachment = {
     view: context.getCurrentTexture().createView(),
-    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+    clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
     loadOp: "clear",
     storeOp: "store",
   };
@@ -295,6 +292,7 @@ async function renderStages(position, color) {
   numPoints = position.length / 3;
   positions = position;
   colors = color;
+  console.log(positions);
   await initVertexBuffer();
   await initUniform();
   await createBindGroups();

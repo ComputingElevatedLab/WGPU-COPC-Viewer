@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { scene, scene_width, scene_height, scene_depth } from "./index";
 let MAX_BOUNDARY_X = 8;
 let MAX_BOUNDARY_Y = 8;
 let MAX_BOUNDARY_Z = 8;

@@ -1,4 +1,3 @@
-import { controls } from "./index";
 import * as THREE from "three";
 
 let direction = [
@@ -54,14 +53,14 @@ function traverseTreeWrapper(
     let [level, x, y, z] = root;
     let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
-    if (level > 1) {
+    if (level > 5) {
       return [];
     }
 
-    let cameraPosition = controls.object.position;
-    let myDistanceFromCamera = cameraPosition.distanceTo(
-      new THREE.Vector3(center_x, center_y, center_z)
-    );
+    // let cameraPosition = controls.object.position;
+    // let myDistanceFromCamera = cameraPosition.distanceTo(
+    //   new THREE.Vector3(center_x, center_y, center_z)
+    // );
 
     let x_left = center_x - width / 2;
     let x_right = center_x + width / 2;
