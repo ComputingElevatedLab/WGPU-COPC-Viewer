@@ -22,7 +22,7 @@ let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
 let TotalCount = 0;
-const MAX_WORKERS = 5;
+const MAX_WORKERS = 1;
 let promises = [];
 let nodePagesString;
 let pagesString;
@@ -214,11 +214,11 @@ async function loadCOPC() {
   // }
 
   const syncThread = async () => {
-    await Promise.all(promises).then((response) => {
+    await Promise.all(promises).then(async (response) => {
       for (let i = 0, _length = response.length; i < _length; i++) {
         let data = response[i];
         let size = data[0].length * 4;
-        let positionBuffer = device.createBuffer({
+        let positionBuffer = await device.createBuffer({
           label: `${data[0].length}`,
           size: size,
           usage: GPUBufferUsage.VERTEX,
@@ -231,7 +231,7 @@ async function loadCOPC() {
         positionMappedArray.set(data[0]);
         positionBuffer.unmap();
 
-        let colorBuffer = device.createBuffer({
+        let colorBuffer = await device.createBuffer({
           label: `color buffer of ${data[2]}`,
           size: size,
           usage: GPUBufferUsage.VERTEX,
@@ -252,7 +252,7 @@ async function loadCOPC() {
     });
   };
 
-  let chunk = 5;
+  let chunk = 1;
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
   console.log(clock.getDelta());

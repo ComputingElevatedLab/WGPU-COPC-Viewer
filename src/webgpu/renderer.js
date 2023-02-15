@@ -300,7 +300,7 @@ async function renderStages(position, color) {
   await initUniform();
   await createBindGroups();
   await createDepthBuffer();
-  requestAnimationFrame(render);
+  requestAnimationFrame(render2);
 }
 
 async function renderWrapper() {
@@ -309,6 +309,36 @@ async function renderWrapper() {
   await createDepthBuffer();
   requestAnimationFrame(render);
 }
+
+function render2(timestamp) {
+  commandEncoder = device.createCommandEncoder();
+  projView = mat4.mul(projView, proj, camera.camera);
+  // update(timestamp);
+  encodedCommand();
+
+  // device.queue.writeBuffer(MVP_Buffer, 0, worldViewProj, 16);
+
+  let wvStagingBuffer = device.createBuffer({
+    size: 4 * 16,
+    usage: GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
+  const stagingUniformData = new Float32Array(wvStagingBuffer.getMappedRange());
+  stagingUniformData.set(projView);
+  wvStagingBuffer.unmap();
+  commandEncoder.copyBufferToBuffer(wvStagingBuffer, 0, MVP_Buffer, 0, 64);
+  let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
+  renderPass.setPipeline(renderPipeline);
+  renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
+  renderPass.setBindGroup(0, mvp_BG);
+  renderPass.setVertexBuffer(0, positionBuffer);
+  renderPass.setVertexBuffer(1, colorBuffer);
+  renderPass.draw(numPoints, 1, 0, 0);
+  renderPass.end();
+  device.queue.submit([commandEncoder.finish()]);
+  requestAnimationFrame(render);
+}
+
 function render(timestamp) {
   commandEncoder = device.createCommandEncoder();
   projView = mat4.mul(projView, proj, camera.camera);
@@ -326,17 +356,18 @@ function render(timestamp) {
   stagingUniformData.set(projView);
   wvStagingBuffer.unmap();
   commandEncoder.copyBufferToBuffer(wvStagingBuffer, 0, MVP_Buffer, 0, 64);
+  let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
+  renderPass.setPipeline(renderPipeline);
+  renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
+  renderPass.setBindGroup(0, mvp_BG);
   for (let key in bufferMap) {
-    let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
-    renderPass.setPipeline(renderPipeline);
-    renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
-    renderPass.setBindGroup(0, mvp_BG);
     renderPass.setVertexBuffer(0, bufferMap[key].position);
     renderPass.setVertexBuffer(1, bufferMap[key].color);
     // console.log("length is", +bufferMap[key].position.label / 3);
-    renderPass.draw(+bufferMap[key].position.label / 3, 1, 0, 0);
-    renderPass.end();
+    numPoints = +bufferMap[key].position.label / 3;
+    renderPass.draw(numPoints, 1, 0, 0);
   }
+  renderPass.end();
   device.queue.submit([commandEncoder.finish()]);
   requestAnimationFrame(render);
 }
