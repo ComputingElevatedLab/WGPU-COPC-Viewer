@@ -1,4 +1,5 @@
 import { vs, fs } from "../shaders/renderShader.js";
+import { bufferMap } from "../index.js";
 
 let adapter = null;
 let device = null;
@@ -164,6 +165,8 @@ function initUniform() {
     canvas.height,
   ]);
 
+  console.log(camera);
+
   proj = mat4.perspective(
     mat4.create(),
     (50 * Math.PI) / 180.0,
@@ -300,6 +303,12 @@ async function renderStages(position, color) {
   requestAnimationFrame(render);
 }
 
+async function renderWrapper() {
+  await initUniform();
+  await createBindGroups();
+  await createDepthBuffer();
+  requestAnimationFrame(render);
+}
 function render(timestamp) {
   commandEncoder = device.createCommandEncoder();
   projView = mat4.mul(projView, proj, camera.camera);
@@ -317,18 +326,19 @@ function render(timestamp) {
   stagingUniformData.set(projView);
   wvStagingBuffer.unmap();
   commandEncoder.copyBufferToBuffer(wvStagingBuffer, 0, MVP_Buffer, 0, 64);
-  let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
-  renderPass.setPipeline(renderPipeline);
-  renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
-  renderPass.setBindGroup(0, mvp_BG);
-  renderPass.setVertexBuffer(0, positionBuffer);
-  renderPass.setVertexBuffer(1, colorBuffer);
-  renderPass.draw(numPoints, 1, 0, 0);
-  renderPass.end();
+  for (let key in bufferMap) {
+    let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
+    renderPass.setPipeline(renderPipeline);
+    renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
+    renderPass.setBindGroup(0, mvp_BG);
+    renderPass.setVertexBuffer(0, bufferMap[key].position);
+    renderPass.setVertexBuffer(1, bufferMap[key].color);
+    // console.log("length is", +bufferMap[key].position.label / 3);
+    renderPass.draw(+bufferMap[key].position.label / 3, 1, 0, 0);
+    renderPass.end();
+  }
   device.queue.submit([commandEncoder.finish()]);
   requestAnimationFrame(render);
 }
 
-stages();
-
-export { renderStages };
+export { renderStages, device, stages, renderWrapper };

@@ -9,11 +9,12 @@ import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { Copc, Key } from "copc";
 import Worker from "./worker/fetcher.worker.js";
-import { renderStages } from "./webgpu/renderer";
+import { renderStages, device, stages, renderWrapper } from "./webgpu/renderer";
 
 import { traverseTreeWrapper } from "./passiveloader";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
+let bufferMap = {};
 let postMessageRes = 100;
 let positions = [];
 let colors = [];
@@ -21,12 +22,21 @@ let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
 let TotalCount = 0;
-const MAX_WORKERS = 10;
+const MAX_WORKERS = 5;
 let promises = [];
 let nodePagesString;
 let pagesString;
 let copcString;
-let x_min, y_min, z_min, x_max, y_max, z_max, widthx, widthy, widthz;
+let x_min,
+  y_min,
+  z_min,
+  x_max,
+  y_max,
+  z_max,
+  widthx,
+  widthy,
+  widthz,
+  scaleFactor;
 
 function createWorker(data1, data2) {
   return new Promise((resolve) => {
@@ -40,22 +50,37 @@ function createWorker(data1, data2) {
           copcString,
           data1,
           data2,
-          [x_min, y_min, z_min, widthx, widthy, widthz],
+          [
+            x_min,
+            y_min,
+            z_min,
+            widthx,
+            widthy,
+            widthz,
+            scaleFactor[0],
+            scaleFactor[1],
+            scaleFactor[2],
+          ],
         ]);
       } else {
         workerCount += 1;
         let position = postMessageRes[0];
         let color = postMessageRes[1];
+        let localPosition = [];
+        let localColor = [];
         for (let i = 0; i < position.length; i++) {
-          positions.push(position[i] / 1000.0);
+          positions.push(position[i]);
+          localPosition.push(position[i]);
           colors.push(color[i]);
+          localColor.push(color[i]);
         }
         if (workerCount == MAX_WORKERS) {
           workerCount = 0;
           promises = [];
         }
+
         worker.terminate();
-        resolve(true);
+        resolve([localPosition, localColor, data1]);
       }
     };
   });
@@ -143,6 +168,7 @@ async function loadCOPC() {
   clock.getDelta();
   let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await Copc.create(filename);
+  scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
   console.log("loading time is", clock.getDelta());
   scale = copc.header.scale[0];
@@ -175,6 +201,7 @@ async function loadCOPC() {
     center_z,
     scale
   );
+  console.log(keyCountMap);
 
   TotalCount = keyCountMap.length;
   let pointsArray = [];
@@ -188,34 +215,69 @@ async function loadCOPC() {
 
   const syncThread = async () => {
     await Promise.all(promises).then((response) => {
-      console.log("one chunk finish");
+      for (let i = 0, _length = response.length; i < _length; i++) {
+        let data = response[i];
+        let size = data[0].length * 4;
+        let positionBuffer = device.createBuffer({
+          label: `${data[0].length}`,
+          size: size,
+          usage: GPUBufferUsage.VERTEX,
+          mappedAtCreation: true,
+        });
+
+        let positionMappedArray = new Float32Array(
+          positionBuffer.getMappedRange()
+        );
+        positionMappedArray.set(data[0]);
+        positionBuffer.unmap();
+
+        let colorBuffer = device.createBuffer({
+          label: `color buffer of ${data[2]}`,
+          size: size,
+          usage: GPUBufferUsage.VERTEX,
+          mappedAtCreation: true,
+        });
+
+        let colorMappedArray = new Float32Array(colorBuffer.getMappedRange());
+        colorMappedArray.set(data[1]);
+        colorBuffer.unmap();
+
+        bufferMap[data[2]] = {
+          position: positionBuffer,
+          color: colorBuffer,
+        };
+      }
+      // console.log(bufferMap);
+      // console.log("one chunk finish");
     });
   };
 
-  let chunk = 10;
+  let chunk = 5;
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
   console.log(clock.getDelta());
+  stages();
   for (let m = 0; m < keyCountMap.length; ) {
     let remaining = totalNodes - doneCount;
     let numbWorker = Math.min(chunk, remaining);
     for (let i = 0; i < numbWorker; i++) {
-      console.log("i am entering first time");
+      // console.log("i am entering first time");
       promises.push(createWorker(keyCountMap[m], keyCountMap[m + 1]));
       doneCount++;
       m += 2;
-      console.log(doneCount);
       if (doneCount % MAX_WORKERS == 0) {
         await syncThread();
         // console.log("i am done");
       }
     }
+    // console.log(positions);
   }
   console.log(clock.getDelta());
 
   // render by WebGPU
-  console.log(colors);
-  renderStages(positions, colors);
+  // console.log(colors);
+  // renderStages(positions, colors);
+  renderWrapper();
   // ----------------------------------------------------------------------------
   // geometry.setAttribute(
   //   "position",
@@ -230,4 +292,4 @@ async function loadCOPC() {
 
 loadCOPC();
 
-export { scene_width, scene_height, scene_depth, loadCOPC };
+export { scene_width, scene_height, scene_depth, loadCOPC, bufferMap };
