@@ -1,5 +1,5 @@
 import { vs, fs } from "../shaders/renderShader.js";
-import { bufferMap } from "../index.js";
+import { bufferMap, retrivePoints } from "../index.js";
 
 let adapter = null;
 let device = null;
@@ -21,6 +21,10 @@ let renderDepthTexture;
 let canvas;
 let numPoints;
 let positions, colors;
+let keyMap = {
+  isDown: false,
+  dragging: false,
+};
 
 function configureSwapChain(device) {
   context.configure({
@@ -59,6 +63,21 @@ async function init() {
 
   swapChainFormat = navigator.gpu.getPreferredCanvasFormat();
   configureSwapChain(device);
+  canvas.addEventListener("mousedown", (e) => {
+    if (e.buttons == 1 || e.buttons == 2) {
+      keyMap["isDown"] = true;
+    }
+  });
+
+  window.addEventListener("mouseup", (e) => {
+    keyMap["isDown"] = false;
+  });
+
+  canvas.addEventListener("mousemove", (e) => {
+    if (keyMap["isDown"] == true) {
+      // fetchTree();
+    }
+  });
 }
 
 async function intRenderPipeline() {
@@ -164,8 +183,6 @@ function initUniform() {
     canvas.width,
     canvas.height,
   ]);
-
-  console.log(camera);
 
   proj = mat4.perspective(
     mat4.create(),

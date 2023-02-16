@@ -24,7 +24,7 @@ const workers = new Array(1).fill(null);
 let TotalCount = 0;
 const MAX_WORKERS = 1;
 let promises = [];
-let nodePagesString;
+let nodePages, nodePagesString;
 let pagesString;
 let copcString;
 let x_min,
@@ -36,6 +36,9 @@ let x_min,
   widthx,
   widthy,
   widthz,
+  center_x,
+  center_y,
+  center_z,
   scaleFactor;
 
 function createWorker(data1, data2) {
@@ -95,8 +98,6 @@ let qt;
 let mapCamera,
   mapSizeX = 128,
   mapSizeY = 64;
-let nodePages;
-
 let _width = window.innerWidth;
 let _height = window.innerHeight;
 let right = 1024,
@@ -164,34 +165,46 @@ function sleep(ms) {
 
 let keyCountMap;
 
-async function loadCOPC() {
-  clock.getDelta();
-  let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
-  const copc = await Copc.create(filename);
-  scaleFactor = copc.header.scale;
-  copcString = JSON.stringify(copc);
-  console.log("loading time is", clock.getDelta());
-  scale = copc.header.scale[0];
-  [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
-  widthx = Math.abs(x_max - x_min);
-  widthy = Math.abs(y_max - y_min);
-  widthz = Math.abs(z_max - z_min);
-  let center_x = (x_min + x_max) / 2;
-  let center_y = (y_min + y_max) / 2;
-  let center_z = (z_min + z_max) / 2;
-  const { nodes: nodePages, pages: pages } = await Copc.loadHierarchyPage(
-    filename,
-    copc.info.rootHierarchyPage
-  );
-  nodePagesString = JSON.stringify(nodePages);
-  pagesString = JSON.stringify(pages);
+const syncThread = async () => {
+  await Promise.all(promises).then(async (response) => {
+    for (let i = 0, _length = response.length; i < _length; i++) {
+      let data = response[i];
+      let size = data[0].length * 4;
+      let positionBuffer = await device.createBuffer({
+        label: `${data[0].length}`,
+        size: size,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
+      });
 
-  let total = 0;
-  for (let key in pages) {
-    total += pages[key].pointCount;
-  }
-  console.log("toatl is", total);
-  const root = nodePages["0-0-0-0"];
+      let positionMappedArray = new Float32Array(
+        positionBuffer.getMappedRange()
+      );
+      positionMappedArray.set(data[0]);
+      positionBuffer.unmap();
+
+      let colorBuffer = await device.createBuffer({
+        label: `color buffer of ${data[2]}`,
+        size: size,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
+      });
+
+      let colorMappedArray = new Float32Array(colorBuffer.getMappedRange());
+      colorMappedArray.set(data[1]);
+      colorBuffer.unmap();
+
+      bufferMap[data[2]] = {
+        position: positionBuffer,
+        color: colorBuffer,
+      };
+    }
+    // console.log(bufferMap);
+    // console.log("one chunk finish");
+  });
+};
+
+async function retrivePoints() {
   keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
@@ -213,53 +226,13 @@ async function loadCOPC() {
   //   console.log("loading data");
   // }
 
-  const syncThread = async () => {
-    await Promise.all(promises).then(async (response) => {
-      for (let i = 0, _length = response.length; i < _length; i++) {
-        let data = response[i];
-        let size = data[0].length * 4;
-        let positionBuffer = await device.createBuffer({
-          label: `${data[0].length}`,
-          size: size,
-          usage: GPUBufferUsage.VERTEX,
-          mappedAtCreation: true,
-        });
-
-        let positionMappedArray = new Float32Array(
-          positionBuffer.getMappedRange()
-        );
-        positionMappedArray.set(data[0]);
-        positionBuffer.unmap();
-
-        let colorBuffer = await device.createBuffer({
-          label: `color buffer of ${data[2]}`,
-          size: size,
-          usage: GPUBufferUsage.VERTEX,
-          mappedAtCreation: true,
-        });
-
-        let colorMappedArray = new Float32Array(colorBuffer.getMappedRange());
-        colorMappedArray.set(data[1]);
-        colorBuffer.unmap();
-
-        bufferMap[data[2]] = {
-          position: positionBuffer,
-          color: colorBuffer,
-        };
-      }
-      // console.log(bufferMap);
-      // console.log("one chunk finish");
-    });
-  };
-
-  let chunk = 1;
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
   console.log(clock.getDelta());
-  stages();
+
   for (let m = 0; m < keyCountMap.length; ) {
     let remaining = totalNodes - doneCount;
-    let numbWorker = Math.min(chunk, remaining);
+    let numbWorker = Math.min(MAX_WORKERS, remaining);
     for (let i = 0; i < numbWorker; i++) {
       // console.log("i am entering first time");
       promises.push(createWorker(keyCountMap[m], keyCountMap[m + 1]));
@@ -270,26 +243,60 @@ async function loadCOPC() {
         // console.log("i am done");
       }
     }
-    // console.log(positions);
   }
-  console.log(clock.getDelta());
-
-  // render by WebGPU
-  // console.log(colors);
-  // renderStages(positions, colors);
-  renderWrapper();
-  // ----------------------------------------------------------------------------
-  // geometry.setAttribute(
-  //   "position",
-  //   new THREE.Float32BufferAttribute(positions, 3)
-  // );
-  // geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  // var material = new THREE.PointsMaterial({ size: 2, vertexColors: true });
-  // let p = new THREE.Points(geometry, material);
-  // scene.add(p);
-  // -----------------------------------------------------------------------------
 }
 
-loadCOPC();
+async function loadCOPC() {
+  clock.getDelta();
+  let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
+  const copc = await Copc.create(filename);
+  scaleFactor = copc.header.scale;
+  copcString = JSON.stringify(copc);
+  console.log("loading time is", clock.getDelta());
+  scale = copc.header.scale[0];
+  [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+  widthx = Math.abs(x_max - x_min);
+  widthy = Math.abs(y_max - y_min);
+  widthz = Math.abs(z_max - z_min);
+  center_x = (x_min + x_max) / 2;
+  center_y = (y_min + y_max) / 2;
+  center_z = (z_min + z_max) / 2;
+  const { nodes: nodePages1, pages: pages } = await Copc.loadHierarchyPage(
+    filename,
+    copc.info.rootHierarchyPage
+  );
+  nodePages = nodePages1;
+  console.log(nodePages);
+  nodePagesString = JSON.stringify(nodePages);
+  pagesString = JSON.stringify(pages);
+  await retrivePoints();
+}
 
-export { scene_width, scene_height, scene_depth, loadCOPC, bufferMap };
+console.log(clock.getDelta());
+(async () => {
+  await stages();
+  await loadCOPC();
+  await renderWrapper();
+})();
+// render by WebGPU
+// console.log(colors);
+// renderStages(positions, colors);
+// ----------------------------------------------------------------------------
+// geometry.setAttribute(
+//   "position",
+//   new THREE.Float32BufferAttribute(positions, 3)
+// );
+// geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+// var material = new THREE.PointsMaterial({ size: 2, vertexColors: true });
+// let p = new THREE.Points(geometry, material);
+// scene.add(p);
+// -----------------------------------------------------------------------------
+
+export {
+  scene_width,
+  scene_height,
+  scene_depth,
+  loadCOPC,
+  bufferMap,
+  retrivePoints,
+};
