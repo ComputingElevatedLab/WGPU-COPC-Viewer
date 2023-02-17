@@ -22,7 +22,7 @@ let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
 let TotalCount = 0;
-const MAX_WORKERS = 1;
+const MAX_WORKERS = 52;
 let promises = [];
 let nodePages, nodePagesString;
 let pagesString;
@@ -204,17 +204,17 @@ const syncThread = async () => {
   });
 };
 
-async function retrivePoints() {
+async function retrivePoints(eyePos = [0, 0, 0]) {
   keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
     center_x,
     center_y,
     center_z,
-    center_z,
-    scale
+    [widthx, widthy, widthz],
+    scaleFactor,
+    eyePos
   );
-  console.log(keyCountMap);
 
   TotalCount = keyCountMap.length;
   let pointsArray = [];
@@ -228,8 +228,6 @@ async function retrivePoints() {
 
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
-  console.log(clock.getDelta());
-
   for (let m = 0; m < keyCountMap.length; ) {
     let remaining = totalNodes - doneCount;
     let numbWorker = Math.min(MAX_WORKERS, remaining);
@@ -240,10 +238,11 @@ async function retrivePoints() {
       m += 2;
       if (doneCount % MAX_WORKERS == 0) {
         await syncThread();
-        // console.log("i am done");
+        // console.log(doneCount, "i am done");
       }
     }
   }
+  console.log("it finished at", clock.getDelta());
 }
 
 async function loadCOPC() {
@@ -252,31 +251,33 @@ async function loadCOPC() {
   const copc = await Copc.create(filename);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
-  console.log("loading time is", clock.getDelta());
   scale = copc.header.scale[0];
   [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
-  center_x = (x_min + x_max) / 2;
-  center_y = (y_min + y_max) / 2;
-  center_z = (z_min + z_max) / 2;
+  center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
+  center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
+  center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz) * scaleFactor[2];
+  // center is moved to origin and we dont need to do this but for sake for checking the cordinate system, i am doing this
   const { nodes: nodePages1, pages: pages } = await Copc.loadHierarchyPage(
     filename,
     copc.info.rootHierarchyPage
   );
   nodePages = nodePages1;
-  console.log(nodePages);
   nodePagesString = JSON.stringify(nodePages);
   pagesString = JSON.stringify(pages);
   await retrivePoints();
 }
 
-console.log(clock.getDelta());
 (async () => {
   await stages();
+  console.log("data loading start");
   await loadCOPC();
+  console.log("data loaded");
   await renderWrapper();
+  console.log("render done");
 })();
 // render by WebGPU
 // console.log(colors);

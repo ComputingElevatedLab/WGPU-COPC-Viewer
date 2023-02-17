@@ -75,7 +75,8 @@ async function init() {
 
   canvas.addEventListener("mousemove", (e) => {
     if (keyMap["isDown"] == true) {
-      // fetchTree();
+      let cameraPosition = camera.eyePos();
+      retrivePoints(cameraPosition);
     }
   });
 }
@@ -306,6 +307,7 @@ async function update(timestamp) {
 async function stages() {
   await init();
   await intRenderPipeline();
+  await initUniform();
 }
 
 async function renderStages(position, color) {
@@ -314,7 +316,6 @@ async function renderStages(position, color) {
   colors = color;
   console.log(positions);
   await initVertexBuffer();
-  await initUniform();
   await createBindGroups();
   await createDepthBuffer();
   requestAnimationFrame(render2);

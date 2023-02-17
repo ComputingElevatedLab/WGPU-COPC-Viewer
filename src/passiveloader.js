@@ -47,27 +47,32 @@ function traverseTreeWrapper(
   center_y,
   center_z,
   width,
-  scale
+  scale,
+  cameraPosition
 ) {
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
     let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
-    if (level > 2) {
+    let distance = Math.sqrt(
+      Math.pow(Math.abs(cameraPosition[0] - center_x), 2) +
+        Math.pow(Math.abs(cameraPosition[1] - center_y), 2) +
+        Math.pow(Math.abs(cameraPosition[2] - center_z), 2)
+    );
+    if (distance > 6.5) {
       return [];
     }
-
     // let cameraPosition = controls.object.position;
     // let myDistanceFromCamera = cameraPosition.distanceTo(
     //   new THREE.Vector3(center_x, center_y, center_z)
     // );
 
-    let x_left = center_x - width / 2;
-    let x_right = center_x + width / 2;
-    let y_top = center_y + width / 2;
-    let y_bottom = center_y - width / 2;
-    let z_near = center_z - width / 2;
-    let z_far = center_z + width / 2;
+    let x_left = center_x - width[0] / 2;
+    let x_right = center_x + width[0] / 2;
+    let y_top = center_y + width[1] / 2;
+    let y_bottom = center_y - width[1] / 2;
+    let z_near = center_z - width[2] / 2;
+    let z_far = center_z + width[2] / 2;
 
     let result = [key, nodePages[key].pointCount];
     direction.forEach((element, index) => {
@@ -93,19 +98,17 @@ function traverseTreeWrapper(
         center_x,
         center_y,
         center_z,
-        width / 2
+        [width[0] / 2, width[1] / 2, width[2] / 2]
       );
       result.push(...result1);
     });
     return result;
   }
-  return traverseTree(
-    root,
-    center_x / scale,
-    center_y / scale,
-    center_z / scale,
-    width / scale
-  );
+  return traverseTree(root, center_x, center_y, center_z, [
+    width[0] * scale[0],
+    width[1] * scale[1],
+    width[2] * scale[2],
+  ]);
 }
 
 export { traverseTreeWrapper };
