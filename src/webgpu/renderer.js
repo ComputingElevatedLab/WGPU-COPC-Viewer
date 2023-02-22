@@ -25,6 +25,20 @@ let keyMap = {
   isDown: false,
   dragging: false,
 };
+let debounceTimeOutId = null;
+
+function throttle(callback, interval) {
+  let enableCall = true;
+  return function (...args) {
+    if (!enableCall) return;
+    console.log("called now");
+    enableCall = false;
+    callback.apply(this, args);
+    setTimeout(() => (enableCall = true), interval);
+  };
+}
+
+let throttleTreeTravel = throttle(retrivePoints, 8000);
 
 function configureSwapChain(device) {
   context.configure({
@@ -73,10 +87,10 @@ async function init() {
     keyMap["isDown"] = false;
   });
 
-  canvas.addEventListener("mousemove", (e) => {
+  canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
       let cameraPosition = camera.eyePos();
-      retrivePoints(cameraPosition);
+      throttleTreeTravel(cameraPosition);
     }
   });
 }

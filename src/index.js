@@ -22,7 +22,7 @@ let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
 let TotalCount = 0;
-const MAX_WORKERS = 52;
+const MAX_WORKERS = 26;
 let promises = [];
 let nodePages, nodePagesString;
 let pagesString;
@@ -170,7 +170,7 @@ const syncThread = async () => {
     for (let i = 0, _length = response.length; i < _length; i++) {
       let data = response[i];
       let size = data[0].length * 4;
-      let positionBuffer = await device.createBuffer({
+      let positionBuffer = device.createBuffer({
         label: `${data[0].length}`,
         size: size,
         usage: GPUBufferUsage.VERTEX,
@@ -183,7 +183,7 @@ const syncThread = async () => {
       positionMappedArray.set(data[0]);
       positionBuffer.unmap();
 
-      let colorBuffer = await device.createBuffer({
+      let colorBuffer = device.createBuffer({
         label: `color buffer of ${data[2]}`,
         size: size,
         usage: GPUBufferUsage.VERTEX,
@@ -204,8 +204,43 @@ const syncThread = async () => {
   });
 };
 
+function filterkeyCountMap(keyMap, bufferMap) {
+  let newKeyMap = [];
+  let newBufferMap = {};
+  // return keymap that need to be added
+
+  let existingBuffer = Object.keys(bufferMap).reduce((acc, val) => {
+    acc[val] = true;
+    return acc;
+  }, {});
+  console.log(existingBuffer);
+
+  for (let i = 0; i < keyMap.length; i += 2) {
+    if (!(keyMap[i] in bufferMap)) {
+      newKeyMap.push(keyMap[i], keyMap[i + 1]);
+    } else {
+      newBufferMap[keyMap[i]] = {
+        position: bufferMap[keyMap[i]].position,
+        color: bufferMap[keyMap[i]].color,
+      };
+      delete existingBuffer[keyMap[i]];
+    }
+  }
+
+  console.log(existingBuffer);
+  for (let key in existingBuffer) {
+    bufferMap[key].position.destroy();
+    bufferMap[key].color.destroy();
+  }
+
+  bufferMap = newBufferMap;
+  console.log(bufferMap);
+  return newKeyMap;
+  //filter and delete unwanted bufferMap
+}
+
 async function retrivePoints(eyePos = [0, 0, 0]) {
-  keyCountMap = traverseTreeWrapper(
+  let keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
     center_x,
@@ -216,16 +251,9 @@ async function retrivePoints(eyePos = [0, 0, 0]) {
     eyePos
   );
 
-  TotalCount = keyCountMap.length;
-  let pointsArray = [];
-  var geometry = new THREE.BufferGeometry();
-
+  keyCountMap = filterkeyCountMap(keyCountMap, bufferMap);
+  console.log(keyCountMap);
   clock.getDelta();
-
-  // while (postMessageRes == 100) {
-  //   console.log("loading data");
-  // }
-
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
   for (let m = 0; m < keyCountMap.length; ) {
