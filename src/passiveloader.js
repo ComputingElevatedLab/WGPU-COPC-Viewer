@@ -50,6 +50,7 @@ function traverseTreeWrapper(
   scale,
   cameraPosition
 ) {
+  console.log(cameraPosition, center_x, center_y, center_z);
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
     let newLevel = level + 1;
@@ -59,7 +60,7 @@ function traverseTreeWrapper(
         Math.pow(Math.abs(cameraPosition[1] - center_y), 2) +
         Math.pow(Math.abs(cameraPosition[2] - center_z), 2)
     );
-    if (distance > 6.5) {
+    if (distance > 6.2) {
       return [];
     }
     // let cameraPosition = controls.object.position;

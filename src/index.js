@@ -22,7 +22,7 @@ let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
 let TotalCount = 0;
-const MAX_WORKERS = 26;
+const MAX_WORKERS = navigator.hardwareConcurrency - 1;
 let promises = [];
 let nodePages, nodePagesString;
 let pagesString;
@@ -41,11 +41,20 @@ let x_min,
   center_z,
   scaleFactor;
 
+function isTerminated(worker) {
+  try {
+    worker.postMessage(() => {});
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function createWorker(data1, data2) {
   return new Promise((resolve) => {
     let worker = new Worker();
     worker.onmessage = (event) => {
-      postMessageRes = event.data;
+      let postMessageRes = event.data;
       if (postMessageRes == 200) {
         worker.postMessage([
           nodePagesString,
@@ -81,7 +90,6 @@ function createWorker(data1, data2) {
           workerCount = 0;
           promises = [];
         }
-
         worker.terminate();
         resolve([localPosition, localColor, data1]);
       }
@@ -208,12 +216,13 @@ function filterkeyCountMap(keyMap, bufferMap) {
   let newKeyMap = [];
   let newBufferMap = {};
   // return keymap that need to be added
-
-  let existingBuffer = Object.keys(bufferMap).reduce((acc, val) => {
-    acc[val] = true;
-    return acc;
-  }, {});
-  console.log(existingBuffer);
+  // let existingBuffers = Object.keys(bufferMap);
+  // console.log(existingBuffers);
+  // let existingBuffer = existingBuffers.reduce((acc, val) => {
+  //   acc[val] = true;
+  //   return acc;
+  // }, {});
+  // console.log(existingBuffer);
 
   for (let i = 0; i < keyMap.length; i += 2) {
     if (!(keyMap[i] in bufferMap)) {
@@ -223,18 +232,11 @@ function filterkeyCountMap(keyMap, bufferMap) {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
       };
-      delete existingBuffer[keyMap[i]];
+      // delete existingBuffer[keyMap[i]];
     }
   }
 
-  console.log(existingBuffer);
-  for (let key in existingBuffer) {
-    bufferMap[key].position.destroy();
-    bufferMap[key].color.destroy();
-  }
-
   bufferMap = newBufferMap;
-  console.log(bufferMap);
   return newKeyMap;
   //filter and delete unwanted bufferMap
 }
@@ -264,7 +266,7 @@ async function retrivePoints(eyePos = [0, 0, 0]) {
       promises.push(createWorker(keyCountMap[m], keyCountMap[m + 1]));
       doneCount++;
       m += 2;
-      if (doneCount % MAX_WORKERS == 0) {
+      if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
         await syncThread();
         // console.log(doneCount, "i am done");
       }
@@ -275,6 +277,8 @@ async function retrivePoints(eyePos = [0, 0, 0]) {
 
 async function loadCOPC() {
   clock.getDelta();
+  // https://viewer.copc.io/?copc=https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz
+  // https://github.com/PDAL/data/blob/master/autzen/autzen-classified.copc.laz
   let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await Copc.create(filename);
   scaleFactor = copc.header.scale;
@@ -285,6 +289,7 @@ async function loadCOPC() {
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
+  console.log(widthx, widthy, widthz, scaleFactor);
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
   center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
   center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz) * scaleFactor[2];
