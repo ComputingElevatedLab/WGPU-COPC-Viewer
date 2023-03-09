@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { computeFocalLength, computeSSE } from "./utils/loader";
 
 let direction = [
   [0, 0, 0],
@@ -10,6 +11,9 @@ let direction = [
   [1, 1, 0],
   [1, 1, 1],
 ];
+
+let cameraFocalLength = computeFocalLength(90);
+console.log(cameraFocalLength);
 
 async function* lazyLoad(offsetMap, url) {
   while (offsetMap.length > 0) {
@@ -40,6 +44,38 @@ function isLeadfNode(root, nodePages) {
   return true;
 }
 
+// function calculateSSE(
+//   distance,
+//   center_x,
+//   center_y,
+//   center_z,
+//   [width_x, width_y, width_z],
+//   camera,
+//   proj
+// ) {
+//   const box = new THREE.Box3(
+//     new THREE.Vector3(
+//       center_x - width_x / 2,
+//       center_y - width_y / 2,
+//       center_z - width_z / 2
+//     ),
+//     new THREE.Vector3(
+//       center_x + width_x / 2,
+//       center_y + width_y / 2,
+//       center_z + width_z / 2
+//     )
+//   );
+//   console.log(proj);
+//   const boxScreen = box
+//     .clone()
+//     .applyMatrix4(new THREE.Matrix4().fromArray(camera.invCamera))
+//     .applyMatrix4(new THREE.Matrix4().fromArray(proj));
+//   const boxSize = boxScreen.getSize(new THREE.Vector3()).length();
+//   console.log(boxScreen);
+//   const error = boxSize / distance;
+//   return error;
+// }
+
 function traverseTreeWrapper(
   nodePages,
   root,
@@ -48,9 +84,12 @@ function traverseTreeWrapper(
   center_z,
   width,
   scale,
-  cameraPosition
+  cameraPosition,
+  camera,
+  proj
 ) {
-  console.log(cameraPosition, center_x, center_y, center_z);
+  cameraPosition = camera.eyePos();
+  console.log(cameraPosition);
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
     let newLevel = level + 1;
@@ -60,9 +99,20 @@ function traverseTreeWrapper(
         Math.pow(Math.abs(cameraPosition[1] - center_y), 2) +
         Math.pow(Math.abs(cameraPosition[2] - center_z), 2)
     );
-    if (distance > 6.2) {
+
+    const myerror = computeSSE(Math.max(...width), distance, cameraFocalLength);
+    if (myerror < 0.05) {
       return [];
     }
+    // console.log(
+    //   "computed error is",
+    //   "for width of",
+    //   Math.max(...width)
+    // );
+
+    // if (distance > 7.0) {
+    //   return [];
+    // }
     // let cameraPosition = controls.object.position;
     // let myDistanceFromCamera = cameraPosition.distanceTo(
     //   new THREE.Vector3(center_x, center_y, center_z)

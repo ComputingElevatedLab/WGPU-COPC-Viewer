@@ -26,6 +26,7 @@ const MAX_WORKERS = navigator.hardwareConcurrency - 1;
 let promises = [];
 let nodePages, nodePagesString;
 let pagesString;
+let camera, proj;
 let copcString;
 let x_min,
   y_min,
@@ -40,6 +41,7 @@ let x_min,
   center_y,
   center_z,
   scaleFactor;
+const canvas = document.getElementById("screen-canvas");
 
 function isTerminated(worker) {
   try {
@@ -250,7 +252,9 @@ async function retrivePoints(eyePos = [0, 0, 0]) {
     center_z,
     [widthx, widthy, widthz],
     scaleFactor,
-    eyePos
+    eyePos,
+    camera,
+    proj
   );
 
   keyCountMap = filterkeyCountMap(keyCountMap, bufferMap);
@@ -273,6 +277,21 @@ async function retrivePoints(eyePos = [0, 0, 0]) {
     }
   }
   console.log("it finished at", clock.getDelta());
+}
+
+async function createCameraProj() {
+  camera = new ArcballCamera([0, 0, 7], [0, 0, 0], [0, 1, 0], 25, [
+    canvas.width,
+    canvas.height,
+  ]);
+
+  proj = mat4.perspective(
+    mat4.create(),
+    (50 * Math.PI) / 180.0,
+    canvas.width / canvas.height,
+    0.1,
+    1000
+  );
 }
 
 async function loadCOPC() {
@@ -305,7 +324,9 @@ async function loadCOPC() {
 }
 
 (async () => {
-  await stages();
+  await createCameraProj();
+  console.log(proj);
+  await stages(camera, proj);
   console.log("data loading start");
   await loadCOPC();
   console.log("data loaded");

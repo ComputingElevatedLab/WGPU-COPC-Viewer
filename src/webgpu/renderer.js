@@ -191,24 +191,14 @@ async function initVertexBuffer() {
   colorBuffer.unmap();
 }
 
-function initUniform() {
+function initUniform(cam, projMatrix) {
+  camera = cam;
+  proj = projMatrix;
+  console.log(camera);
   MVP_Buffer = device.createBuffer({
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-
-  camera = new ArcballCamera([0, 0, 7], [0, 0, 0], [0, 1, 0], 25, [
-    canvas.width,
-    canvas.height,
-  ]);
-
-  proj = mat4.perspective(
-    mat4.create(),
-    (50 * Math.PI) / 180.0,
-    canvas.width / canvas.height,
-    0.1,
-    1000
-  );
 
   var controller = new Controller();
 
@@ -321,10 +311,10 @@ async function update(timestamp) {
   }
 }
 
-async function stages() {
+async function stages(camera, proj) {
   await init();
   await intRenderPipeline();
-  await initUniform();
+  await initUniform(camera, proj);
 }
 
 async function renderStages(position, color) {
@@ -339,7 +329,6 @@ async function renderStages(position, color) {
 }
 
 async function renderWrapper() {
-  await initUniform();
   await createBindGroups();
   await createDepthBuffer();
   requestAnimationFrame(render);
