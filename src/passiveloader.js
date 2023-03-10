@@ -97,15 +97,6 @@ function getSSE(center, radius, distance, projViewMatrix) {
     vec4.fromValues(center[0], center[1], center[2], 1.0),
     projViewMatrix
   );
-
-  // let centerScreenSpace = vec2.fromValues(centerScreen[0], centerScreen[1])
-  // centerScreenSpace[0] /= centerScreen[3]
-  // centerScreenSpace[1] /= centerScreen[3]
-  // centerScreenSpace[0] = 0.5 * centerScreenSpace[0]  + 0.5
-  // centerScreenSpace[1] = 0.5 * centerScreenSpace[1] + 0.5
-  // centerScreenSpace[0] *= screenWidth
-  // centerScreenSpace[1] *= screenHeight
-
   let surfacePoint = vec4.fromValues(
     center[0] + radius,
     center[1],
@@ -122,8 +113,6 @@ function getSSE(center, radius, distance, projViewMatrix) {
   desiredRadius = 300;
   return 1.2 > Math.abs(radiusScreenSpace / desiredRadius);
 }
-
-// calculate the radius of bounding sphere
 
 function traverseTreeWrapper(
   nodePages,
