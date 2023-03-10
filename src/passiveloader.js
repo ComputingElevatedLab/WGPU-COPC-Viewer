@@ -13,7 +13,6 @@ let direction = [
 ];
 
 let cameraFocalLength = computeFocalLength(90);
-console.log(cameraFocalLength);
 
 async function* lazyLoad(offsetMap, url) {
   while (offsetMap.length > 0) {
@@ -75,6 +74,56 @@ function isLeadfNode(root, nodePages) {
 //   const error = boxSize / distance;
 //   return error;
 // }
+let canvas = document.getElementById("screen-canvas");
+let screenWidth = canvas.width;
+let screenHeight = canvas.height;
+let fovRADIAN = Math.PI / 2;
+
+//create a view frustum based on viewProjectionMatrix
+//check containsBox
+
+// transforming center of bounding sphere from world space to screen space
+function getSSE(center, radius, distance, projViewMatrix) {
+  let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
+  let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
+  let frustum = new Frustum(projViewMatrix);
+  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+    return false;
+  }
+
+  let centerScreen = vec4.create();
+  vec4.transformMat4(
+    centerScreen,
+    vec4.fromValues(center[0], center[1], center[2], 1.0),
+    projViewMatrix
+  );
+
+  // let centerScreenSpace = vec2.fromValues(centerScreen[0], centerScreen[1])
+  // centerScreenSpace[0] /= centerScreen[3]
+  // centerScreenSpace[1] /= centerScreen[3]
+  // centerScreenSpace[0] = 0.5 * centerScreenSpace[0]  + 0.5
+  // centerScreenSpace[1] = 0.5 * centerScreenSpace[1] + 0.5
+  // centerScreenSpace[0] *= screenWidth
+  // centerScreenSpace[1] *= screenHeight
+
+  let surfacePoint = vec4.fromValues(
+    center[0] + radius,
+    center[1],
+    center[2],
+    1.0
+  );
+  vec4.transformMat4(surfacePoint, surfacePoint, projViewMatrix);
+
+  let projectedRadius = Math.abs(surfacePoint[0] - centerScreen[0]);
+  let radiusScreenSpace = (projectedRadius / centerScreen[3]) * 0.5 + 0.5; // to transform it into NDC ( range 0 to 1)
+  radiusScreenSpace *= screenWidth;
+  let desiredRadius =
+    (radius * screenWidth) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
+  desiredRadius = 300;
+  return 1.2 > Math.abs(radiusScreenSpace / desiredRadius);
+}
+
+// calculate the radius of bounding sphere
 
 function traverseTreeWrapper(
   nodePages,
@@ -84,12 +133,11 @@ function traverseTreeWrapper(
   center_z,
   width,
   scale,
-  cameraPosition,
   camera,
-  proj
+  projViewMatrix
 ) {
-  cameraPosition = camera.eyePos();
-  console.log(cameraPosition);
+  console.log(projViewMatrix);
+  let cameraPosition = camera.eyePos();
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
     let newLevel = level + 1;
@@ -99,9 +147,16 @@ function traverseTreeWrapper(
         Math.pow(Math.abs(cameraPosition[1] - center_y), 2) +
         Math.pow(Math.abs(cameraPosition[2] - center_z), 2)
     );
-
-    const myerror = computeSSE(Math.max(...width), distance, cameraFocalLength);
-    if (myerror < 0.05) {
+    let error = getSSE(
+      [center_x, center_y, center_z],
+      0.5 * Math.max(...width),
+      distance,
+      projViewMatrix
+    );
+    // console.log(myerror);
+    // const myerror = computeSSE(Math.max(...width), distance, cameraFocalLength);
+    // console.log(myerror, Math.max(...width));
+    if (!error) {
       return [];
     }
     // console.log(
@@ -155,7 +210,7 @@ function traverseTreeWrapper(
     });
     return result;
   }
-  return traverseTree(root, center_x, center_y, center_z, [
+  return traverseTree(root, center_x * 1000, center_y * 1000, center_z * 1000, [
     width[0] * scale[0],
     width[1] * scale[1],
     width[2] * scale[2],

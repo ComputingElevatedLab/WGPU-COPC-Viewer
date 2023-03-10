@@ -243,7 +243,7 @@ function filterkeyCountMap(keyMap, bufferMap) {
   //filter and delete unwanted bufferMap
 }
 
-async function retrivePoints(eyePos = [0, 0, 0]) {
+async function retrivePoints(projectionViewMatrix) {
   let keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
@@ -252,9 +252,8 @@ async function retrivePoints(eyePos = [0, 0, 0]) {
     center_z,
     [widthx, widthy, widthz],
     scaleFactor,
-    eyePos,
     camera,
-    proj
+    projectionViewMatrix
   );
 
   keyCountMap = filterkeyCountMap(keyCountMap, bufferMap);
@@ -294,7 +293,7 @@ async function createCameraProj() {
   );
 }
 
-async function loadCOPC() {
+async function loadCOPC(camera, projViewMatrix) {
   clock.getDelta();
   // https://viewer.copc.io/?copc=https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz
   // https://github.com/PDAL/data/blob/master/autzen/autzen-classified.copc.laz
@@ -320,15 +319,14 @@ async function loadCOPC() {
   nodePages = nodePages1;
   nodePagesString = JSON.stringify(nodePages);
   pagesString = JSON.stringify(pages);
-  await retrivePoints();
+  await retrivePoints(projViewMatrix);
 }
 
 (async () => {
   await createCameraProj();
-  console.log(proj);
-  await stages(camera, proj);
+  let projViewMatrix = await stages(camera, proj);
   console.log("data loading start");
-  await loadCOPC();
+  await loadCOPC(camera, projViewMatrix);
   console.log("data loaded");
   await renderWrapper();
   console.log("render done");

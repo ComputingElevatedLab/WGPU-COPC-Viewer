@@ -93,7 +93,7 @@ async function init() {
   canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
       let cameraPosition = camera.eyePos();
-      throttleTreeTravel(cameraPosition);
+      throttleTreeTravel(projView);
     }
   });
 }
@@ -232,6 +232,7 @@ function initUniform(cam, projMatrix) {
   );
   observer.observe(canvas);
   projView = mat4.mul(projView, proj, camera.camera);
+  return projView;
 }
 
 async function createBindGroups() {
@@ -314,7 +315,8 @@ async function update(timestamp) {
 async function stages(camera, proj) {
   await init();
   await intRenderPipeline();
-  await initUniform(camera, proj);
+  let projectionViewMatrix = await initUniform(camera, proj);
+  return projectionViewMatrix;
 }
 
 async function renderStages(position, color) {
