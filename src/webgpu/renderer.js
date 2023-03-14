@@ -96,6 +96,10 @@ async function init() {
       throttleTreeTravel(projView);
     }
   });
+
+  window.addEventListener("wheel", () => {
+    throttleTreeTravel(projView);
+  });
 }
 
 async function intRenderPipeline() {

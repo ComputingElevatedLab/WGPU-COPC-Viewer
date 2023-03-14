@@ -279,9 +279,9 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 2000], [0, 0, 0], [0, 1, 0], 200, [
-    canvas.width,
-    canvas.height,
+  camera = new ArcballCamera([0, 0, 2000], [0, 0, 0], [0, 1, 0], 500, [
+    window.innerWidth,
+    window.innerHeight,
   ]);
 
   proj = mat4.perspective(

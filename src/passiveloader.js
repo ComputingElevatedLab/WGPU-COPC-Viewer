@@ -75,7 +75,7 @@ function isLeadfNode(root, nodePages) {
 //   return error;
 // }
 let canvas = document.getElementById("screen-canvas");
-let screenWidth = canvas.width;
+let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 console.log(screenHeight);
 let fovRADIAN = Math.PI / 2;
