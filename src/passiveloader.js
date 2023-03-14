@@ -88,10 +88,10 @@ function isRendered(center, radius, distance, projViewMatrix) {
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
-  // if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-  //   console.log("out of frustum");
-  //   return false;
-  // }
+  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+    console.log("out of frustum");
+    return false;
+  }
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
   // console.log(screenHeight, projectedRadius, Math.abs(projectedRadius) > 150);
