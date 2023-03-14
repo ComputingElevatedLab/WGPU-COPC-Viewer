@@ -250,7 +250,7 @@ async function retrivePoints(projectionViewMatrix) {
     center_x,
     center_y,
     center_z,
-    [widthx, widthy, widthz],
+    [0.5 * widthx, 0.5 * widthy, 0.5 * widthz],
     scaleFactor,
     camera,
     projectionViewMatrix
@@ -279,17 +279,17 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 7], [0, 0, 0], [0, 1, 0], 25, [
+  camera = new ArcballCamera([0, 0, 2000], [0, 0, 0], [0, 1, 0], 200, [
     canvas.width,
     canvas.height,
   ]);
 
   proj = mat4.perspective(
     mat4.create(),
-    (50 * Math.PI) / 180.0,
+    (90 * Math.PI) / 180.0,
     canvas.width / canvas.height,
     0.1,
-    1000
+    80000
   );
 }
 
@@ -301,13 +301,12 @@ async function loadCOPC(camera, projViewMatrix) {
   const copc = await Copc.create(filename);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
-  scale = copc.header.scale[0];
+  // scale = copc.header.scale[0];
   [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
-
+  scaleFactor = [1, 1, 1];
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
-  console.log(widthx, widthy, widthz, scaleFactor);
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
   center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
   center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz) * scaleFactor[2];
