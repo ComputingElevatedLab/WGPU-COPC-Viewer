@@ -13,5 +13,5 @@ to install and run:
 ```
 Current render output:
 
-![image](https://user-images.githubusercontent.com/11494733/210715218-47b58d63-4b13-4f17-aa5a-5636f67321bd.png)
+![image](https://user-images.githubusercontent.com/11494733/224901651-f801ce25-9134-4ee0-9dad-119b7d433c49.png)
 
