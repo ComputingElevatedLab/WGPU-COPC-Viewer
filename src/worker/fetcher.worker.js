@@ -21,11 +21,7 @@ let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
 
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);
-  positions.push(
-    (returnPoint[0] - x_min - 0.5 * widthx) * scaleX,
-    (returnPoint[1] - y_min - 0.5 * widthy) * scaleY,
-    (returnPoint[2] - z_min - 0.5 * widthz) * scaleZ
-  );
+  positions.push(returnPoint[0], returnPoint[1], returnPoint[2]);
   const vx = returnPoint[3] / 65535;
   color.setRGB(vx, vx, vx);
   colors.push(color.r, color.g, color.b);

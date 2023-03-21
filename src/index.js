@@ -40,7 +40,8 @@ let x_min,
   center_x,
   center_y,
   center_z,
-  scaleFactor;
+  scaleFactor,
+  params;
 const canvas = document.getElementById("screen-canvas");
 
 function isTerminated(worker) {
@@ -84,6 +85,10 @@ function createWorker(data1, data2) {
         let localColor = [];
         for (let i = 0; i < position.length; i++) {
           positions.push(position[i]);
+          if (i % 2 != 0) {
+            // console.log(params[1]);
+            // console.log((position[i] / params[1]) * 10);
+          }
           localPosition.push(position[i]);
           colors.push(color[i]);
           localColor.push(color[i]);
@@ -293,20 +298,24 @@ async function createCameraProj() {
   );
 }
 
-async function loadCOPC(camera, projViewMatrix) {
+async function loadCOPC() {
   clock.getDelta();
   // https://viewer.copc.io/?copc=https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz
   // https://github.com/PDAL/data/blob/master/autzen/autzen-classified.copc.laz
   let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
+
   const copc = await Copc.create(filename);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
   [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+  console.log(y_min, y_max);
   scaleFactor = [1, 1, 1];
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
+  params = [widthx, widthy, widthz, x_min, y_min, z_min];
+  console.log(params);
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
   center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
   center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz) * scaleFactor[2];
@@ -318,14 +327,16 @@ async function loadCOPC(camera, projViewMatrix) {
   nodePages = nodePages1;
   nodePagesString = JSON.stringify(nodePages);
   pagesString = JSON.stringify(pages);
-  await retrivePoints(projViewMatrix);
 }
 
 (async () => {
   await createCameraProj();
-  let projViewMatrix = await stages(camera, proj);
+  console.log("file reading start");
+  await loadCOPC();
+  console.log("initialize the uniform buffers");
+  let projViewMatrix = await stages(camera, proj, params);
   console.log("data loading start");
-  await loadCOPC(camera, projViewMatrix);
+  await retrivePoints(projViewMatrix);
   console.log("data loaded");
   await renderWrapper();
   console.log("render done");

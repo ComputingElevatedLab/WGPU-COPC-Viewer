@@ -27,6 +27,8 @@ let keyMap = {
   dragging: false,
 };
 let debounceTimeOutId = null;
+let colorMapBuffer;
+let paramsBuffer;
 const stats = Stats();
 document.body.appendChild(stats.dom);
 
@@ -195,10 +197,50 @@ async function initVertexBuffer() {
   colorBuffer.unmap();
 }
 
-function initUniform(cam, projMatrix) {
+function initUniform(cam, projMatrix, params) {
   camera = cam;
   proj = projMatrix;
-  console.log(camera);
+
+  // params
+  paramsBuffer = device.createBuffer({
+    size: 6 * 4,
+    usage: GPUBufferUsage.UNIFORM,
+    mappedAtCreation: true,
+  });
+  let mapArray_params = new Float32Array(paramsBuffer.getMappedRange());
+
+  mapArray_params.set(params);
+  paramsBuffer.unmap();
+
+  function get1DArray(arr) {
+    return +arr.join().split(",");
+  }
+  // create colormap
+  let hsv_colors = [
+    [1, 0, 0, 0.0],
+    [0.0, 1.0, 0, 0.0],
+    [0.97, 1, 0.01, 0.0],
+    [0, 0.99, 0.04, 0.0],
+    [0, 0.98, 0.52, 0.0],
+    [0, 0.98, 1, 0.0],
+    [0.01, 0.49, 1, 0.0],
+    [0.03, 0, 0.99, 0.0],
+    [1, 0, 0.96, 0.0],
+    [1, 0, 0.49, 0.0],
+  ];
+
+  colorMapBuffer = device.createBuffer({
+    size: 160,
+    usage: GPUBufferUsage.UNIFORM,
+    mappedAtCreation: true,
+  });
+  console.log(colorMapBuffer.size); // check the size of the buffer
+
+  let mapArray = new Float32Array(colorMapBuffer.getMappedRange());
+  hsv_colors = hsv_colors.flat();
+  mapArray.set(hsv_colors);
+  colorMapBuffer.unmap();
+
   MVP_Buffer = device.createBuffer({
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -248,6 +290,18 @@ async function createBindGroups() {
         binding: 0,
         resource: {
           buffer: MVP_Buffer,
+        },
+      },
+      {
+        binding: 1,
+        resource: {
+          buffer: colorMapBuffer,
+        },
+      },
+      {
+        binding: 2,
+        resource: {
+          buffer: paramsBuffer,
         },
       },
     ],
@@ -316,14 +370,18 @@ async function update(timestamp) {
   }
 }
 
-async function stages(camera, proj) {
+async function stages(camera, proj, params) {
   await init();
   await intRenderPipeline();
-  let projectionViewMatrix = await initUniform(camera, proj);
+  let projectionViewMatrix = await initUniform(camera, proj, params);
   return projectionViewMatrix;
 }
 
+// ---------------------------------------------------------------------------
+// i guess i am not using this
+
 async function renderStages(position, color) {
+  console.log(" i am insider another render");
   numPoints = position.length / 3;
   positions = position;
   colors = color;
@@ -333,6 +391,7 @@ async function renderStages(position, color) {
   await createDepthBuffer();
   requestAnimationFrame(render2);
 }
+// -----------------------------------------------------------------------------
 
 async function renderWrapper() {
   await createBindGroups();
