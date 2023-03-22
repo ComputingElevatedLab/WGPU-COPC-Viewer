@@ -6,7 +6,7 @@ let vs = `
 
     struct VertexOut {
         @builtin(position) position: vec4<f32>,
-        @location(0) color: vec3<f32>
+        @location(0) color: vec4<f32>
     };
 
 
@@ -16,7 +16,8 @@ let vs = `
         width_z:f32,
         x_min: f32,
         y_min: f32,
-        z_min: f32
+        z_min: f32,
+        current_Axis: f32
     };
 
     struct cmapUniform {
@@ -27,15 +28,22 @@ let vs = `
     @group(0) @binding(1) var<uniform> cMap: cmapUniform;
     @group(0) @binding(2) var<uniform> params: paramsUniform;
     
-
     @vertex
     fn main(in: VertexInput)->VertexOut{
         var out:VertexOut;
+        var cMapIndex:i32; 
         let position = in.position - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z);
-        let y_position_shifted = abs(in.position.z - params.z_min)/params.width_z;
-        let cmapIndex = i32(y_position_shifted*9);
-        let cmapped = cMap.colors[cmapIndex];
-        out.color = vec3(cmapped.x, cmapped.y, cmapped.z);
+        if(params.current_Axis == 2.0){
+            cMapIndex = i32(abs(in.position.z - params.z_min)/params.width_z *9);
+        }
+        else if(params.current_Axis == 1.0){
+            cMapIndex = i32(abs(in.position.y - params.y_min)/params.width_y *9);
+        }
+        else {
+            cMapIndex = i32(abs(in.position.x - params.x_min)/params.width_x *9);
+        }
+        let cmapped = cMap.colors[cMapIndex];
+        out.color = vec4(cmapped.x, cmapped.y, cmapped.z, in.color.x);
         out.position = MVP_Matrix* vec4<f32>(position, 1.0);
         return out;
     }
@@ -44,12 +52,12 @@ let vs = `
 let fs = `
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
-    @location(0) color: vec3<f32>
+    @location(0) color: vec4<f32>
 };
 
 @fragment
 fn main(in:VertexOut)->@location(0) vec4<f32>{
-    return vec4<f32>(in.color.x, in.color.y, in.color.z, 1.0);
+    return in.color;
 }
 `;
 

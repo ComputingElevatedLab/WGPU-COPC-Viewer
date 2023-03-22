@@ -3,11 +3,11 @@
   margin: 0;
   padding: 0;
   border: none;
+  font-family: "Poppins", sans-serif;
 }
 
 body {
   overflow: hidden;
-  font-family: "Poppins", sans-serif;
 }
 
 .note {
@@ -26,4 +26,23 @@ body {
   bottom: 55px;
   left: 50px;
   font-weight: 600;
+}
+.selection-map {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+}
+
+.option-title {
+  border-bottom: 1px solid #aaa;
+  margin-bottom: 20px;
+}
+
+select {
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+option {
+  text-indent: 15px;
 }

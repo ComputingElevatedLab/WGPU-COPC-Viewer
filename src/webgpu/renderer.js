@@ -29,6 +29,8 @@ let keyMap = {
 let debounceTimeOutId = null;
 let colorMapBuffer;
 let paramsBuffer;
+let currentAxis = 2;
+let param;
 const stats = Stats();
 document.body.appendChild(stats.dom);
 
@@ -61,6 +63,33 @@ function goToFallback() {
 
 function recoverFromDeviceLoss(data) {
   console.log("device is lost");
+}
+
+(() => {
+  const selectColormap = document.getElementById("colormap-axis");
+  selectColormap.addEventListener("change", (event) => {
+    const axis = parseInt(event.target.value);
+    if (axis != currentAxis) {
+      currentAxis = axis;
+      updateAxis();
+    }
+  });
+})();
+
+async function updateAxis() {
+  param[param.length - 1] = currentAxis;
+  const stagingBuffer = device.createBuffer({
+    usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+    size: 28,
+    mappedAtCreation: true,
+  });
+
+  const stagingData = new Float32Array(stagingBuffer.getMappedRange());
+  stagingData.set(param);
+  stagingBuffer.unmap();
+  const copyEncoder = device.createCommandEncoder();
+  copyEncoder.copyBufferToBuffer(stagingBuffer, 24, paramsBuffer, 24, 4);
+  device.queue.submit([copyEncoder.finish()]);
 }
 
 async function init() {
@@ -200,11 +229,12 @@ async function initVertexBuffer() {
 function initUniform(cam, projMatrix, params) {
   camera = cam;
   proj = projMatrix;
-
+  param = params;
+  params.push(currentAxis);
   // params
   paramsBuffer = device.createBuffer({
-    size: 6 * 4,
-    usage: GPUBufferUsage.UNIFORM,
+    size: 7 * 4,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     mappedAtCreation: true,
   });
   let mapArray_params = new Float32Array(paramsBuffer.getMappedRange());
@@ -234,7 +264,6 @@ function initUniform(cam, projMatrix, params) {
     usage: GPUBufferUsage.UNIFORM,
     mappedAtCreation: true,
   });
-  console.log(colorMapBuffer.size); // check the size of the buffer
 
   let mapArray = new Float32Array(colorMapBuffer.getMappedRange());
   hsv_colors = hsv_colors.flat();
