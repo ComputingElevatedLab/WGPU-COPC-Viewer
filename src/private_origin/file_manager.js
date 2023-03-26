@@ -1,9 +1,3 @@
-if (window.FileSystemOriginPrivate) {
-  console.log("browser does support private origin space");
-} else {
-  console.log("Sorry !! browser does support private origin space");
-}
-
 let total_ops = 0;
 let used_ops = 0;
 navigator.webkitPersistentStorage.queryUsageAndQuota(
@@ -27,9 +21,7 @@ let clear = async () => {
   const root = await navigator.storage.getDirectory();
   const fileNames = await root.keys();
   const files = Array.from(fileNames);
-  console.log(files);
   for (const fileName of files) {
-    console.log(fileName);
     const fileHandle = await root.getFileHandle("0-0-0-0");
     await fileHandle.remove();
   }
@@ -41,7 +33,8 @@ let write = async (fileName, textToWrite) => {
     create: true,
   });
   const writableStream = await fileHandle.createWritable();
-  writableStream.write(textToWrite);
+  await writableStream.write(textToWrite);
+  await writableStream.close();
 };
 
 let read = async (fileName) => {
@@ -59,8 +52,9 @@ let read = async (fileName) => {
 
 let doesExist = async (fileName) => {
   try {
+    let fileToCheck = `${fileName}.txt`;
     const root = await navigator.storage.getDirectory();
-    const fileHandle = await root.getFileHandle(`${fileName}.txt`);
+    const fileHandle = await root.getFileHandle(fileToCheck);
     const permissionStatus = await fileHandle.queryPermission();
     return true;
   } catch (error) {

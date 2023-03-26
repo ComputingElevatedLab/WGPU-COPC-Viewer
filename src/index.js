@@ -190,10 +190,10 @@ function sleep(ms) {
 let keyCountMap;
 
 const createBuffer = (positions, colors) => {
-  let size = positions.length * 4;
+  let size = positions.length;
   let positionBuffer = device.createBuffer({
-    label: `position buffer`,
-    size: size,
+    label: `${size}`,
+    size: size * 4,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
   });
@@ -203,8 +203,8 @@ const createBuffer = (positions, colors) => {
   positionBuffer.unmap();
 
   let colorBuffer = device.createBuffer({
-    label: `color buffer `,
-    size: size,
+    label: `${size}`,
+    size: size * 4,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
   });
@@ -225,9 +225,9 @@ const syncThread = async () => {
         color: data[1],
       };
       let data_json_stringify = JSON.stringify(data_json);
+      console.log(data_json_stringify);
       write(fileName, data_json_stringify);
       let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
-
       bufferMap[data[2]] = {
         position: positionBuffer,
         color: colorBuffer,
@@ -239,6 +239,7 @@ const syncThread = async () => {
 };
 
 async function filterkeyCountMap(keyMap, bufferMap) {
+  console.log(keyMap);
   let newKeyMap = [];
   let newBufferMap = {};
   // return keymap that need to be added
@@ -263,7 +264,6 @@ async function filterkeyCountMap(keyMap, bufferMap) {
   }
 
   let filteredElements = [];
-
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let Exist = await doesExist(newKeyMap[i]);
     console.log(Exist, newKeyMap[i]);
