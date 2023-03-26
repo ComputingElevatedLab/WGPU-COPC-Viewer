@@ -12,8 +12,21 @@ import Worker from "./worker/fetcher.worker.js";
 import { renderStages, device, stages, renderWrapper } from "./webgpu/renderer";
 
 import { traverseTreeWrapper } from "./passiveloader";
+import { write, read, doesExist, clear } from "./private_origin/file_manager";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
+
+clear();
+
+// (async () => {
+//   const root = await navigator.storage.getDirectory();
+//   const fileHandle = await root.getFileHandle("0-0-0-0.txt");
+//   await fileHandle.remove();
+//   const fileHandle1 = await root.getFileHandle("1-0-0-0.txt");
+//   await fileHandle1.remove();
+//   // console.log(await doesExist("0-1-0-0"));
+// })();
+
 let bufferMap = {};
 let postMessageRes = 100;
 let positions = [];
@@ -85,10 +98,6 @@ function createWorker(data1, data2) {
         let localColor = [];
         for (let i = 0; i < position.length; i++) {
           positions.push(position[i]);
-          if (i % 2 != 0) {
-            // console.log(params[1]);
-            // console.log((position[i] / params[1]) * 10);
-          }
           localPosition.push(position[i]);
           colors.push(color[i]);
           localColor.push(color[i]);
@@ -180,34 +189,44 @@ function sleep(ms) {
 
 let keyCountMap;
 
+const createBuffer = (positions, colors) => {
+  let size = positions.length * 4;
+  let positionBuffer = device.createBuffer({
+    label: `position buffer`,
+    size: size,
+    usage: GPUBufferUsage.VERTEX,
+    mappedAtCreation: true,
+  });
+
+  let positionMappedArray = new Float32Array(positionBuffer.getMappedRange());
+  positionMappedArray.set(positions);
+  positionBuffer.unmap();
+
+  let colorBuffer = device.createBuffer({
+    label: `color buffer `,
+    size: size,
+    usage: GPUBufferUsage.VERTEX,
+    mappedAtCreation: true,
+  });
+
+  let colorMappedArray = new Float32Array(colorBuffer.getMappedRange());
+  colorMappedArray.set(colors);
+  colorBuffer.unmap();
+  return [positionBuffer, colorBuffer];
+};
+
 const syncThread = async () => {
   await Promise.all(promises).then(async (response) => {
     for (let i = 0, _length = response.length; i < _length; i++) {
       let data = response[i];
-      let size = data[0].length * 4;
-      let positionBuffer = device.createBuffer({
-        label: `${data[0].length}`,
-        size: size,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true,
-      });
-
-      let positionMappedArray = new Float32Array(
-        positionBuffer.getMappedRange()
-      );
-      positionMappedArray.set(data[0]);
-      positionBuffer.unmap();
-
-      let colorBuffer = device.createBuffer({
-        label: `color buffer of ${data[2]}`,
-        size: size,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true,
-      });
-
-      let colorMappedArray = new Float32Array(colorBuffer.getMappedRange());
-      colorMappedArray.set(data[1]);
-      colorBuffer.unmap();
+      let fileName = data[2];
+      let data_json = {
+        position: data[0],
+        color: data[1],
+      };
+      let data_json_stringify = JSON.stringify(data_json);
+      write(fileName, data_json_stringify);
+      let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
 
       bufferMap[data[2]] = {
         position: positionBuffer,
@@ -219,7 +238,7 @@ const syncThread = async () => {
   });
 };
 
-function filterkeyCountMap(keyMap, bufferMap) {
+async function filterkeyCountMap(keyMap, bufferMap) {
   let newKeyMap = [];
   let newBufferMap = {};
   // return keymap that need to be added
@@ -243,8 +262,29 @@ function filterkeyCountMap(keyMap, bufferMap) {
     }
   }
 
+  let filteredElements = [];
+
+  for (let i = 0; i < newKeyMap.length; i += 2) {
+    let Exist = await doesExist(newKeyMap[i]);
+    console.log(Exist, newKeyMap[i]);
+    if (Exist) {
+      let data = await read(newKeyMap[i]);
+      console.log(data);
+      let [positionBuffer, colorBuffer] = createBuffer(
+        data.position,
+        data.color
+      );
+      bufferMap[newKeyMap[i]] = {
+        position: positionBuffer,
+        color: colorBuffer,
+      };
+    } else {
+      filteredElements.push(newKeyMap[i], newKeyMap[i + 1]);
+    }
+  }
+
   bufferMap = newBufferMap;
-  return newKeyMap;
+  return filteredElements;
   //filter and delete unwanted bufferMap
 }
 
@@ -261,7 +301,7 @@ async function retrivePoints(projectionViewMatrix) {
     projectionViewMatrix
   );
 
-  keyCountMap = filterkeyCountMap(keyCountMap, bufferMap);
+  keyCountMap = await filterkeyCountMap(keyCountMap, bufferMap);
   console.log(keyCountMap);
   clock.getDelta();
   let totalNodes = keyCountMap.length / 2;
