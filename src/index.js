@@ -56,9 +56,10 @@ let x_min,
   center_y,
   center_z,
   scaleFactor,
-  params;
-const canvas = document.getElementById("screen-canvas");
+  params,
+  controls;
 
+const canvas = document.getElementById("screen-canvas");
 function isTerminated(worker) {
   try {
     worker.postMessage(() => {});
@@ -332,17 +333,21 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 50], [0, 0, 0], [0, 1, 0], 100, [
-    window.innerWidth,
-    window.innerHeight,
-  ]);
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    8000
+  );
+  camera.position.z = 100;
 
+  controls = new OrbitControls(camera, canvas);
   proj = mat4.perspective(
     mat4.create(),
     (90 * Math.PI) / 180.0,
     canvas.width / canvas.height,
     0.1,
-    80000
+    8000
   );
 }
 

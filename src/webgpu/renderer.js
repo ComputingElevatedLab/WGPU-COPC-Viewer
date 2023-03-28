@@ -122,7 +122,6 @@ async function init() {
 
   canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
-      let cameraPosition = camera.eyePos();
       throttleTreeTravel(projView);
     }
   });
@@ -274,38 +273,9 @@ function initUniform(cam, projMatrix, params) {
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
-  var controller = new Controller();
-
-  controller.mousemove = function (prev, cur, evt) {
-    if (evt.buttons == 1) {
-      // console.log("rotate");
-      camera.rotate(prev, cur);
-    } else if (evt.buttons == 2) {
-      camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
-    }
-  };
-  controller.wheel = function (amt) {
-    // console.log(amt);
-    camera.zoom(amt);
-  };
-  controller.pinch = controller.wheel;
-  controller.twoFingerDrag = function (drag) {
-    camera.pan(drag);
-  };
-  controller.registerForCanvas(canvas);
-  var canvasVisible = false;
-  var observer = new IntersectionObserver(
-    function (e) {
-      if (e[0].isIntersecting) {
-        canvasVisible = true;
-      } else {
-        canvasVisible = false;
-      }
-    },
-    { threshold: [0] }
-  );
-  observer.observe(canvas);
-  projView = mat4.mul(projView, proj, camera.camera);
+  const viewMatrix = new Float32Array(16);
+  viewMatrix.set(camera.matrixWorldInverse.elements);
+  projView = mat4.mul(projView, proj, viewMatrix);
   return projView;
 }
 
@@ -394,7 +364,8 @@ async function update(timestamp) {
       let up = vec3.fromValues(0, 0, 1);
       mat4.lookAt(view, position, target, up);
     }
-    mat4.multiply(worldViewProj, proj, view);
+    const view_matrix = camera.matrixWorldInverse;
+    mat4.multiply(worldViewProj, proj, view_matrix);
   }
 }
 
@@ -402,6 +373,7 @@ async function stages(camera, proj, params) {
   await init();
   await intRenderPipeline();
   let projectionViewMatrix = await initUniform(camera, proj, params);
+  console.log(projectionViewMatrix);
   return projectionViewMatrix;
 }
 
@@ -461,8 +433,9 @@ async function renderWrapper() {
     stats.update();
     var startTime = performance.now();
     commandEncoder = device.createCommandEncoder();
-    console.log(camera.camera)
-    projView = mat4.mul(projView, proj, camera.camera);
+    const viewMatrix = new Float32Array(16);
+    viewMatrix.set(camera.matrixWorldInverse.elements);
+    projView = mat4.mul(projView, proj, viewMatrix);
     // update(timestamp);
     encodedCommand();
 
