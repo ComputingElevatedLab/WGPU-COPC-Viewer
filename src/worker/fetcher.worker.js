@@ -17,7 +17,7 @@ let x_min,
   scaleY,
   scaleZ;
 let positions = [];
-let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
+const filename = process.env.filename;
 
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);

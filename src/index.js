@@ -340,8 +340,9 @@ async function loadCOPC() {
   clock.getDelta();
   // https://viewer.copc.io/?copc=https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz
   // https://github.com/PDAL/data/blob/master/autzen/autzen-classified.copc.laz
-  let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
-
+  // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
+  const filename = process.env.filename;
+  console.log(filename);
   const copc = await Copc.create(filename);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);

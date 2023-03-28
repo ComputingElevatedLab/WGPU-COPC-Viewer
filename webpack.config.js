@@ -1,7 +1,7 @@
 const webpack = require("webpack");
 const path = require("path");
 const lazPerf = require("laz-perf");
-console.log(lazPerf);
+const Dotenv = require("dotenv-webpack");
 module.exports = {
   entry: "./src/index.js",
   output: {
@@ -34,12 +34,7 @@ module.exports = {
   mode: "development",
   devtool: "cheap-module-source-map",
   plugins: [
+    new Dotenv(),
     // commonjs({ include: /node_modules\/laz-perf/ }),
-    new webpack.DefinePlugin({
-      tree: {
-        leafCapacity: 16,
-        bufferCapacity: 16,
-      },
-    }),
   ],
 };

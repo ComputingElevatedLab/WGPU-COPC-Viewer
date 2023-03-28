@@ -21,6 +21,7 @@
   "dependencies": {
     "copc": "^0.0.4",
     "cross-fetch": "^3.1.5",
+    "dotenv-webpack": "^8.0.1",
     "json-fn": "^1.1.1",
     "laz-perf": "^0.0.5",
     "three": "^0.148.0",
