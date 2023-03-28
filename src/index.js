@@ -332,7 +332,7 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 100], [0, 0, 0], [0, 1, 0], 100, [
+  camera = new ArcballCamera([0, 0, 50], [0, 0, 0], [0, 1, 0], 100, [
     window.innerWidth,
     window.innerHeight,
   ]);

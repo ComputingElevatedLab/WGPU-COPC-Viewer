@@ -461,6 +461,7 @@ async function renderWrapper() {
     stats.update();
     var startTime = performance.now();
     commandEncoder = device.createCommandEncoder();
+    console.log(camera.camera)
     projView = mat4.mul(projView, proj, camera.camera);
     // update(timestamp);
     encodedCommand();
