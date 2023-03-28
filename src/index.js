@@ -236,8 +236,7 @@ const syncThread = async () => {
   });
 };
 
-async function filterkeyCountMap(keyMap, bufferMap) {
-  console.log(keyMap);
+async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
   // return keymap that need to be added
@@ -264,15 +263,13 @@ async function filterkeyCountMap(keyMap, bufferMap) {
   let filteredElements = [];
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let Exist = await doesExist(newKeyMap[i]);
-    console.log(Exist, newKeyMap[i]);
     if (Exist) {
       let data = await read(newKeyMap[i]);
-      console.log(data);
       let [positionBuffer, colorBuffer] = createBuffer(
         data.position,
         data.color
       );
-      bufferMap[newKeyMap[i]] = {
+      newBufferMap[newKeyMap[i]] = {
         position: positionBuffer,
         color: colorBuffer,
       };
@@ -280,9 +277,8 @@ async function filterkeyCountMap(keyMap, bufferMap) {
       filteredElements.push(newKeyMap[i], newKeyMap[i + 1]);
     }
   }
-
   bufferMap = newBufferMap;
-  return newKeyMap;
+  return filteredElements;
   //filter and delete unwanted bufferMap
 }
 
@@ -300,7 +296,7 @@ async function retrivePoints(projectionViewMatrix) {
   );
   console.log(camera.eyePos(), keyCountMap);
 
-  keyCountMap = await filterkeyCountMap(keyCountMap, bufferMap);
+  keyCountMap = await filterkeyCountMap(keyCountMap);
   clock.getDelta();
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
