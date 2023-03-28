@@ -4,11 +4,6 @@ navigator.webkitPersistentStorage.queryUsageAndQuota(
   function (used, total) {
     total_ops = total;
     used_ops = used;
-    console.log(
-      `private open space used is ${used_ops / 1e6} MB for total of ${
-        total_ops / 1e9
-      } GB`
-    );
   },
   function (error) {
     console.error("Error getting origin-private file system size:", error);

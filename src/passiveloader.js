@@ -77,7 +77,6 @@ function isLeadfNode(root, nodePages) {
 let canvas = document.getElementById("screen-canvas");
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
-console.log(screenHeight);
 let fovRADIAN = Math.PI / 2;
 
 //create a view frustum based on viewProjectionMatrix
@@ -110,7 +109,6 @@ function traverseTreeWrapper(
   projViewMatrix
 ) {
   let cameraPosition = camera.eyePos();
-  console.log(projViewMatrix, cameraPosition);
   function traverseTree(root, center_x, center_y, center_z, width) {
     // console.log(center_x, center_y, center_z, width);
     let [level, x, y, z] = root;
@@ -174,7 +172,6 @@ function traverseTreeWrapper(
     width[1] * scale[1],
     width[2] * scale[2],
   ]);
-  console.log(finalPoints);
   return finalPoints;
 }
 

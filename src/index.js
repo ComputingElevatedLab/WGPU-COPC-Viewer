@@ -27,6 +27,9 @@ clear();
 // })();
 
 let bufferMap = {};
+let wait = false;
+let toDeleteMap = {};
+let toDelete = false;
 let postMessageRes = 100;
 let positions = [];
 let colors = [];
@@ -239,14 +242,18 @@ const syncThread = async () => {
 async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
-  // return keymap that need to be added
-  // let existingBuffers = Object.keys(bufferMap);
-  // console.log(existingBuffers);
-  // let existingBuffer = existingBuffers.reduce((acc, val) => {
-  //   acc[val] = true;
-  //   return acc;
-  // }, {});
-  // console.log(existingBuffer);
+  for (const key in toDeleteMap) {
+    toDeleteMap[key].position.destroy();
+    toDeleteMap[key].color.destroy();
+    delete toDeleteMap[key];
+  }
+  let existingBuffers = Object.keys(bufferMap);
+  let toDeleteArray = existingBuffers.reduce((acc, val) => {
+    acc[val] = true;
+    return acc;
+  }, {});
+
+  console.log(existingBuffers);
 
   for (let i = 0; i < keyMap.length; i += 2) {
     if (!(keyMap[i] in bufferMap)) {
@@ -256,7 +263,7 @@ async function filterkeyCountMap(keyMap) {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
       };
-      // delete existingBuffer[keyMap[i]];
+      delete toDeleteArray[keyMap[i]];
     }
   }
 
@@ -277,7 +284,15 @@ async function filterkeyCountMap(keyMap) {
       filteredElements.push(newKeyMap[i], newKeyMap[i + 1]);
     }
   }
+
+  for (let key in toDeleteArray) {
+    toDeleteMap[key] = {
+      position: bufferMap[key].position,
+      color: bufferMap[key].position,
+    };
+  }
   bufferMap = newBufferMap;
+  console.log(filteredElements);
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
@@ -294,7 +309,6 @@ async function retrivePoints(projectionViewMatrix) {
     camera,
     projectionViewMatrix
   );
-  console.log(camera.eyePos(), keyCountMap);
 
   keyCountMap = await filterkeyCountMap(keyCountMap);
   clock.getDelta();
@@ -338,19 +352,16 @@ async function loadCOPC() {
   // https://github.com/PDAL/data/blob/master/autzen/autzen-classified.copc.laz
   // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const filename = process.env.filename;
-  console.log(filename);
   const copc = await Copc.create(filename);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
   [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
-  console.log(y_min, y_max);
   scaleFactor = [1, 1, 1];
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
-  console.log(params);
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
   center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
   center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz) * scaleFactor[2];
@@ -397,4 +408,6 @@ export {
   loadCOPC,
   bufferMap,
   retrivePoints,
+  toDeleteMap,
+  wait,
 };

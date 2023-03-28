@@ -1,5 +1,5 @@
 import { vs, fs } from "../shaders/renderShader.js";
-import { bufferMap, retrivePoints } from "../index.js";
+import { bufferMap, retrivePoints, toDeleteMap, wait } from "../index.js";
 import Stats from "three/examples/jsm/libs/stats.module";
 
 let adapter = null;
@@ -97,7 +97,6 @@ async function init() {
   if (!adapter) return goToFallback();
   device = await adapter.requestDevice();
   if (!device) return goToFallback();
-  console.log("device is", device);
   // device.lost.then(recoverFromDeviceLoss);
 
   canvas = document.getElementById("screen-canvas");
