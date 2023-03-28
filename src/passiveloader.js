@@ -110,6 +110,7 @@ function traverseTreeWrapper(
   projViewMatrix
 ) {
   let cameraPosition = camera.eyePos();
+  console.log(projViewMatrix, cameraPosition);
   function traverseTree(root, center_x, center_y, center_z, width) {
     // console.log(center_x, center_y, center_z, width);
     let [level, x, y, z] = root;
@@ -168,11 +169,13 @@ function traverseTreeWrapper(
     });
     return result;
   }
-  return traverseTree(root, center_x, center_y, center_z, [
+  let finalPoints = traverseTree(root, center_x, center_y, center_z, [
     width[0] * scale[0],
     width[1] * scale[1],
     width[2] * scale[2],
   ]);
+  console.log(finalPoints);
+  return finalPoints;
 }
 
 export { traverseTreeWrapper };

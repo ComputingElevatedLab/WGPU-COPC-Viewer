@@ -45,7 +45,7 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 3000);
+let throttleTreeTravel = throttle(retrivePoints, 2000);
 
 function configureSwapChain(device) {
   context.configure({
@@ -488,7 +488,7 @@ async function renderWrapper() {
       renderPass.setVertexBuffer(1, bufferMap[key].color);
       // console.log("length is", +bufferMap[key].position.label / 3);
       numPoints = +bufferMap[key].position.label / 3;
-      renderPass.draw(numPoints, 1, 0, 0);
+      renderPass.draw(numPoints, 4, 0, 0);
     }
     renderPass.end();
     device.queue.submit([commandEncoder.finish()]);

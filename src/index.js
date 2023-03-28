@@ -10,7 +10,6 @@ import Stats from "three/examples/jsm/libs/stats.module";
 import { Copc, Key } from "copc";
 import Worker from "./worker/fetcher.worker.js";
 import { renderStages, device, stages, renderWrapper } from "./webgpu/renderer";
-
 import { traverseTreeWrapper } from "./passiveloader";
 import { write, read, doesExist, clear } from "./private_origin/file_manager";
 import "./styles/main.css";
@@ -225,7 +224,6 @@ const syncThread = async () => {
         color: data[1],
       };
       let data_json_stringify = JSON.stringify(data_json);
-      console.log(data_json_stringify);
       write(fileName, data_json_stringify);
       let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
       bufferMap[data[2]] = {
@@ -284,7 +282,7 @@ async function filterkeyCountMap(keyMap, bufferMap) {
   }
 
   bufferMap = newBufferMap;
-  return filteredElements;
+  return newKeyMap;
   //filter and delete unwanted bufferMap
 }
 
@@ -300,9 +298,9 @@ async function retrivePoints(projectionViewMatrix) {
     camera,
     projectionViewMatrix
   );
+  console.log(camera.eyePos(), keyCountMap);
 
   keyCountMap = await filterkeyCountMap(keyCountMap, bufferMap);
-  console.log(keyCountMap);
   clock.getDelta();
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
@@ -324,7 +322,7 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 2000], [0, 0, 0], [0, 1, 0], 500, [
+  camera = new ArcballCamera([0, 0, 100], [0, 0, 0], [0, 1, 0], 100, [
     window.innerWidth,
     window.innerHeight,
   ]);
