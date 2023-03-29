@@ -51,7 +51,7 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 2000);
+let throttleTreeTravel = throttle(retrivePoints, 1000);
 
 function configureSwapChain(device) {
   context.configure({
@@ -167,10 +167,12 @@ async function intRenderPipeline() {
     buffers: [
       {
         arrayStride: 12,
+        stepMode: "instance",
         attributes: [positionAttribute_Desc],
       },
       {
         arrayStride: 12,
+        stepMode: "instance",
         attributes: [colorAttribute_Desc],
       },
     ],
@@ -189,9 +191,8 @@ async function intRenderPipeline() {
   };
 
   let Primitive_Descriptor = {
-    topology: "point-list",
+    topology: "triangle-strip",
     cullMode: "none",
-    frontFace: "ccw",
   };
 
   renderPipeline = await device.createRenderPipeline({
@@ -206,7 +207,6 @@ async function intRenderPipeline() {
 
 async function initVertexBuffer() {
   let totalNumberOfPoints = numPoints;
-  console.log(totalNumberOfPoints);
   positionBuffer = device.createBuffer({
     label: "vertex position buffer",
     size: totalNumberOfPoints * 12,
@@ -383,7 +383,6 @@ async function stages(camera, proj, params) {
   await init();
   await intRenderPipeline();
   let projectionViewMatrix = await initUniform(camera, proj, params);
-  console.log(projectionViewMatrix);
   return projectionViewMatrix;
 }
 
@@ -395,7 +394,6 @@ async function renderStages(position, color) {
   numPoints = position.length / 3;
   positions = position;
   colors = color;
-  console.log(positions);
   await initVertexBuffer();
   await createBindGroups();
   await createDepthBuffer();
@@ -407,40 +405,6 @@ async function renderWrapper() {
   await createBindGroups();
   await createDepthBuffer();
   requestAnimationFrame(render);
-
-  function render2(timestamp) {
-    commandEncoder = device.createCommandEncoder();
-    let modelMatrix = mat4.create();
-    mat4.rotateZ(modelMatrix, modelMatrix, -Math.PI / 2);
-    projView = mat4.mul(projView, proj, viewMatrix);
-    mat4.mul(projView, projView, modelMatrix);
-    // update(timestamp);
-    encodedCommand();
-
-    // device.queue.writeBuffer(MVP_Buffer, 0, worldViewProj, 16);
-
-    let wvStagingBuffer = device.createBuffer({
-      size: 4 * 16,
-      usage: GPUBufferUsage.COPY_SRC,
-      mappedAtCreation: true,
-    });
-    const stagingUniformData = new Float32Array(
-      wvStagingBuffer.getMappedRange()
-    );
-    stagingUniformData.set(projView);
-    wvStagingBuffer.unmap();
-    commandEncoder.copyBufferToBuffer(wvStagingBuffer, 0, MVP_Buffer, 0, 64);
-    let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
-    renderPass.setPipeline(renderPipeline);
-    renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
-    renderPass.setBindGroup(0, mvp_BG);
-    renderPass.setVertexBuffer(0, positionBuffer);
-    renderPass.setVertexBuffer(1, colorBuffer);
-    renderPass.draw(numPoints, 1, 0, 0);
-    renderPass.end();
-    device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(render);
-  }
 
   function render(timestamp) {
     stats.update();
@@ -477,7 +441,7 @@ async function renderWrapper() {
       renderPass.setVertexBuffer(1, bufferMap[key].color);
       // console.log("length is", +bufferMap[key].position.label / 3);
       numPoints = +bufferMap[key].position.label / 3;
-      renderPass.draw(numPoints, 4, 0, 0);
+      renderPass.draw(4, numPoints, 0, 0);
     }
     renderPass.end();
     device.queue.submit([commandEncoder.finish()]);

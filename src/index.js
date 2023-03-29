@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Octree, Box, Point } from "./octree";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
@@ -17,14 +18,19 @@ import { fillArray, fillMidNodes } from "./helper";
 
 clear();
 
+// ------------------- used to clear intital POFS that got created while writing code ---------------
 // (async () => {
 //   const root = await navigator.storage.getDirectory();
+//   const fileHandle2 = await root.getFileHandle("1-1-0-0.txt");
+//   await fileHandle2.remove();
 //   const fileHandle = await root.getFileHandle("0-0-0-0.txt");
 //   await fileHandle.remove();
 //   const fileHandle1 = await root.getFileHandle("1-0-0-0.txt");
 //   await fileHandle1.remove();
+
 //   // console.log(await doesExist("0-1-0-0"));
 // })();
+// ---------------------------------------------------------------------------------------------------
 
 let bufferMap = {};
 let wait = false;
@@ -137,7 +143,6 @@ let isIntensityPresent;
 function findLevel(qt) {
   // traverse octre
   let threshold = 100;
-
   let cameraPosition = controls.object.position;
   // remove all bounding box 3d object after disposing before every check
   for (let i = 0, _length = boxGroup.children.length; i < _length; i++) {
@@ -254,8 +259,6 @@ async function filterkeyCountMap(keyMap) {
     return acc;
   }, {});
 
-  console.log(existingBuffers);
-
   for (let i = 0; i < keyMap.length; i += 2) {
     if (!(keyMap[i] in bufferMap)) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
@@ -271,6 +274,7 @@ async function filterkeyCountMap(keyMap) {
   let filteredElements = [];
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let Exist = await doesExist(newKeyMap[i]);
+    console.log(Exist, newKeyMap[i]);
     if (Exist) {
       let data = await read(newKeyMap[i]);
       let [positionBuffer, colorBuffer] = createBuffer(
@@ -293,7 +297,6 @@ async function filterkeyCountMap(keyMap) {
     };
   }
   bufferMap = newBufferMap;
-  console.log(filteredElements);
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
@@ -344,7 +347,7 @@ async function createCameraProj() {
 
   controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
+  controls.dampingFactor = 0.1;
   // controls.minAzimuthAngle = 0;
   // controls.maxAzimuthAngle = 0.25 * Math.PI;
   controls.minPolarAngle = 0;

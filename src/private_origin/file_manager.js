@@ -51,7 +51,7 @@ let doesExist = async (fileName) => {
     const root = await navigator.storage.getDirectory();
     const fileHandle = await root.getFileHandle(fileToCheck);
     const permissionStatus = await fileHandle.queryPermission();
-    return true;
+    return permissionStatus == "granted" ? true : false;
   } catch (error) {
     if (error.name === "NotFoundError") {
       console.log("file not found");
