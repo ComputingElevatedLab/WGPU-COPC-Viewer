@@ -1,5 +1,11 @@
 import { vs, fs } from "../shaders/renderShader.js";
-import { bufferMap, retrivePoints, toDeleteMap, wait } from "../index.js";
+import {
+  bufferMap,
+  retrivePoints,
+  toDeleteMap,
+  wait,
+  controls,
+} from "../index.js";
 import Stats from "three/examples/jsm/libs/stats.module";
 
 let adapter = null;
@@ -275,8 +281,12 @@ function initUniform(cam, projMatrix, params) {
 
   const viewMatrix = new Float32Array(16);
   viewMatrix.set(camera.matrixWorldInverse.elements);
+  let modelMatrix = mat4.create();
+  mat4.rotateY(modelMatrix, modelMatrix, -Math.PI / 2);
   projView = mat4.mul(projView, proj, viewMatrix);
-  return projView;
+  const mvpMatrix = mat4.create();
+  mat4.mul(mvpMatrix, projView, modelMatrix);
+  return mvpMatrix;
 }
 
 async function createBindGroups() {
@@ -400,7 +410,10 @@ async function renderWrapper() {
 
   function render2(timestamp) {
     commandEncoder = device.createCommandEncoder();
-    projView = mat4.mul(projView, proj, camera.camera);
+    let modelMatrix = mat4.create();
+    mat4.rotateZ(modelMatrix, modelMatrix, -Math.PI / 2);
+    projView = mat4.mul(projView, proj, viewMatrix);
+    mat4.mul(projView, projView, modelMatrix);
     // update(timestamp);
     encodedCommand();
 
@@ -435,7 +448,10 @@ async function renderWrapper() {
     commandEncoder = device.createCommandEncoder();
     const viewMatrix = new Float32Array(16);
     viewMatrix.set(camera.matrixWorldInverse.elements);
+    let modelMatrix = mat4.create();
+    mat4.rotateX(modelMatrix, modelMatrix, -Math.PI / 4);
     projView = mat4.mul(projView, proj, viewMatrix);
+    mat4.mul(projView, projView, modelMatrix);
     // update(timestamp);
     encodedCommand();
 
@@ -465,6 +481,7 @@ async function renderWrapper() {
     }
     renderPass.end();
     device.queue.submit([commandEncoder.finish()]);
+    controls.update();
     var endTime = performance.now();
     requestAnimationFrame(render);
   }

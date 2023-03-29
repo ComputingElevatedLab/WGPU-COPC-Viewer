@@ -337,17 +337,30 @@ async function createCameraProj() {
     75,
     window.innerWidth / window.innerHeight,
     0.1,
-    8000
+    20000
   );
-  camera.position.z = 100;
+  camera.position.z = 20;
+  // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  // controls.minAzimuthAngle = 0;
+  // controls.maxAzimuthAngle = 0.25 * Math.PI;
+  controls.minPolarAngle = 0;
+  controls.maxPolarAngle = Math.PI;
+  controls.rotateSpeed = 2;
+  controls.zoomSpeed = 2;
+  controls.panSpeed = 5;
+  // controls.autoRotate = true;
+  // controls.autoRotateSpeed = 1;
+  controls.update();
   proj = mat4.perspective(
     mat4.create(),
     (90 * Math.PI) / 180.0,
     canvas.width / canvas.height,
     0.1,
-    8000
+    20000
   );
 }
 
@@ -415,4 +428,5 @@ export {
   retrivePoints,
   toDeleteMap,
   wait,
+  controls,
 };
