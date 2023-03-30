@@ -424,7 +424,8 @@ async function renderWrapper() {
     const viewMatrix = new Float32Array(16);
     viewMatrix.set(camera.matrixWorldInverse.elements);
     let modelMatrix = mat4.create();
-    mat4.rotateX(modelMatrix, modelMatrix, -Math.PI / 4);
+    //  this is not helpful for tree traversal so model matrix rotation is removed for now
+    mat4.rotateX(modelMatrix, modelMatrix, (0 * -Math.PI) / 4);
     projView = mat4.mul(projView, proj, viewMatrix);
     mat4.mul(projView, projView, modelMatrix);
     // update(timestamp);
