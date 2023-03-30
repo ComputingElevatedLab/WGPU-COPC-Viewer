@@ -24,6 +24,7 @@
     "dotenv-webpack": "^8.0.1",
     "json-fn": "^1.1.1",
     "laz-perf": "^0.0.5",
+    "lru-cache": "^8.0.4",
     "three": "^0.148.0",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1",

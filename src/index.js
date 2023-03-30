@@ -15,6 +15,7 @@ import { traverseTreeWrapper } from "./passiveloader";
 import { write, read, doesExist, clear } from "./private_origin/file_manager";
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
+import { cache } from "./lru-cache/index";
 
 clear();
 
@@ -246,6 +247,7 @@ const syncThread = async () => {
 };
 
 async function filterkeyCountMap(keyMap) {
+  console.log("asked for", keyMap);
   let newKeyMap = [];
   let newBufferMap = {};
   for (const key in toDeleteMap) {
@@ -253,6 +255,7 @@ async function filterkeyCountMap(keyMap) {
     toDeleteMap[key].color.destroy();
     delete toDeleteMap[key];
   }
+
   let existingBuffers = Object.keys(bufferMap);
   let toDeleteArray = existingBuffers.reduce((acc, val) => {
     acc[val] = true;
@@ -263,6 +266,7 @@ async function filterkeyCountMap(keyMap) {
     if (!(keyMap[i] in bufferMap)) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
     } else {
+      console.log(`found ${keyMap[i]} in existing buffer`);
       newBufferMap[keyMap[i]] = {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
@@ -271,24 +275,49 @@ async function filterkeyCountMap(keyMap) {
     }
   }
 
-  let filteredElements = [];
+  // --------------------- these are new ones
+  // are they in cache?
+
+  let afterCheckingCache = [];
   for (let i = 0; i < newKeyMap.length; i += 2) {
-    let Exist = await doesExist(newKeyMap[i]);
-    console.log(Exist, newKeyMap[i]);
-    if (Exist) {
-      let data = await read(newKeyMap[i]);
+    let cachedResult = cache.get(newKeyMap[i]);
+    if (cachedResult) {
+      console.log(`found ${newKeyMap[i]} in cache`);
+      cachedResult = JSON.parse(cachedResult);
       let [positionBuffer, colorBuffer] = createBuffer(
-        data.position,
-        data.color
+        cachedResult.position,
+        cachedResult.color
       );
       newBufferMap[newKeyMap[i]] = {
         position: positionBuffer,
         color: colorBuffer,
       };
     } else {
-      filteredElements.push(newKeyMap[i], newKeyMap[i + 1]);
+      afterCheckingCache.push(newKeyMap[i], newKeyMap[i + 1]);
     }
   }
+
+  let filteredElements = [];
+  for (let i = 0; i < afterCheckingCache.length; i += 2) {
+    let Exist = await doesExist(afterCheckingCache[i]);
+    if (Exist) {
+      console.log(`found ${afterCheckingCache[i]} in POFS`);
+      let data = await read(afterCheckingCache[i]);
+      let [positionBuffer, colorBuffer] = createBuffer(
+        data.position,
+        data.color
+      );
+      newBufferMap[afterCheckingCache[i]] = {
+        position: positionBuffer,
+        color: colorBuffer,
+      };
+      cache.set(afterCheckingCache[i], JSON.stringify(data));
+    } else {
+      filteredElements.push(afterCheckingCache[i], afterCheckingCache[i + 1]);
+    }
+  }
+
+  //-------------------------------------------------------------------------
 
   for (let key in toDeleteArray) {
     toDeleteMap[key] = {
@@ -297,6 +326,7 @@ async function filterkeyCountMap(keyMap) {
     };
   }
   bufferMap = newBufferMap;
+  console.log(`to fetch this ${filteredElements}`);
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
