@@ -51,7 +51,7 @@ let vs = `
             cMapIndex = i32(abs(in.position.x - params.x_min)/params.width_x *19);
         }
         let cmapped = cMap.colors[cMapIndex];
-        out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0);
+        out.color = vec4(in.color.x*cmapped.x, in.color.x*cmapped.y, in.color.x*cmapped.z, in.color.x);
         position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);
         out.position = MVP_Matrix* vec4<f32>(position, 1.0);
         return out;

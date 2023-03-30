@@ -376,8 +376,8 @@ async function createCameraProj() {
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new OrbitControls(camera, canvas);
-  // controls.enableDamping = true;
-  // controls.dampingFactor = 0.1;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.1;
   // controls.minAzimuthAngle = 0;
   // controls.maxAzimuthAngle = 0.25 * Math.PI;
   controls.minPolarAngle = 0;
