@@ -299,10 +299,10 @@ async function filterkeyCountMap(keyMap) {
 
   let filteredElements = [];
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
-    let Exist = await doesExist(afterCheckingCache[i]);
+    let [Exist, data] = await doesExist(afterCheckingCache[i]);
     if (Exist) {
       console.log(`found ${afterCheckingCache[i]} in POFS`);
-      let data = await read(afterCheckingCache[i]);
+      // let data = await read(afterCheckingCache[i]);
       let [positionBuffer, colorBuffer] = createBuffer(
         data.position,
         data.color
@@ -376,8 +376,8 @@ async function createCameraProj() {
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.1;
+  // controls.enableDamping = true;
+  // controls.dampingFactor = 0.1;
   // controls.minAzimuthAngle = 0;
   // controls.maxAzimuthAngle = 0.25 * Math.PI;
   controls.minPolarAngle = 0;

@@ -94,7 +94,7 @@ function isRendered(center, radius, distance, projViewMatrix) {
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
   // console.log(screenHeight, projectedRadius, Math.abs(projectedRadius) > 150);
-  return Math.abs(projectedRadius) > 150;
+  return Math.abs(projectedRadius) > 100;
 }
 
 function traverseTreeWrapper(

@@ -17,10 +17,11 @@ let clear = async () => {
   const fileNames = await root.keys();
   const files = Array.from(fileNames);
   for (const fileName of files) {
-    const fileHandle = await root.getFileHandle("0-0-0-0");
+    const fileHandle = await root.getFile(fileName);
     await fileHandle.remove();
   }
 };
+// clear();
 
 let write = async (fileName, textToWrite) => {
   const root = await navigator.storage.getDirectory();
@@ -51,14 +52,22 @@ let doesExist = async (fileName) => {
     const root = await navigator.storage.getDirectory();
     const fileHandle = await root.getFileHandle(fileToCheck);
     const permissionStatus = await fileHandle.queryPermission();
-    return permissionStatus == "granted" ? true : false;
+    let found = permissionStatus == "granted" ? true : false;
+    let file = await fileHandle.getFile();
+    let content = await file.text();
+    if (content) {
+      content = JSON.parse(content);
+    } else {
+      content = null;
+    }
+    return [found, content];
   } catch (error) {
     if (error.name === "NotFoundError") {
       console.log("file not found");
-      return false;
+      return [false, null];
     } else {
       console.error("Error checking if file exists:", error);
-      return false;
+      return [false, null];
     }
   }
 };

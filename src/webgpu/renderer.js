@@ -251,26 +251,37 @@ function initUniform(cam, projMatrix, params) {
   }
   // create colormap
   let hsv_colors = [
-    [1, 0, 0, 0.0],
-    [0.0, 1.0, 0, 0.0],
-    [0.97, 1, 0.01, 0.0],
-    [0, 0.99, 0.04, 0.0],
-    [0, 0.98, 0.52, 0.0],
-    [0, 0.98, 1, 0.0],
-    [0.01, 0.49, 1, 0.0],
-    [0.03, 0, 0.99, 0.0],
-    [1, 0, 0.96, 0.0],
-    [1, 0, 0.49, 0.0],
+    [0.0, 0.0, 0.5],
+    [0.0, 0.2, 0.7],
+    [0.0, 0.4, 0.9],
+    [0.0, 0.6, 1.0],
+    [0.0, 0.8, 1.0],
+    [0.2, 0.9, 0.8],
+    [0.4, 1.0, 0.6],
+    [0.6, 1.0, 0.4],
+    [0.8, 1.0, 0.2],
+    [1.0, 1.0, 0.0],
+    [1.0, 0.9, 0.0],
+    [1.0, 0.8, 0.0],
+    [1.0, 0.6, 0.0],
+    [1.0, 0.4, 0.0],
+    [1.0, 0.2, 0.0],
+    [0.9, 0.0, 0.0],
+    [0.7, 0.0, 0.0],
+    [0.5, 0.0, 0.0],
+    [0.3, 0.0, 0.0],
+    [0.1, 0.0, 0.0],
   ];
 
+  hsv_colors = hsv_colors.flat();
   colorMapBuffer = device.createBuffer({
-    size: 160,
+    size: hsv_colors.length * 3 * 4,
     usage: GPUBufferUsage.UNIFORM,
     mappedAtCreation: true,
   });
 
   let mapArray = new Float32Array(colorMapBuffer.getMappedRange());
-  hsv_colors = hsv_colors.flat();
+
   mapArray.set(hsv_colors);
   colorMapBuffer.unmap();
 
