@@ -22,7 +22,7 @@ const filename = process.env.filename;
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);
   positions.push(returnPoint[0], returnPoint[1], returnPoint[2]);
-  const vx = returnPoint[3] * 0.000015;
+  const vx = returnPoint[3] / 65535;
   color.setRGB(vx, vx, vx);
   colors.push(color.r, color.g, color.b);
   firstTime = false;

@@ -51,7 +51,7 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 1000);
+let throttleTreeTravel = throttle(retrivePoints, 2000);
 
 function configureSwapChain(device) {
   context.configure({

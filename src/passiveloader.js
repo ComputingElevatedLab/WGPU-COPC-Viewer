@@ -83,18 +83,18 @@ let fovRADIAN = Math.PI / 2;
 //check containsBox
 
 // transforming center of bounding sphere from world space to screen space
-function isRendered(center, radius, distance, projViewMatrix) {
+function isRendered(center, radius, distance, projViewMatrix, key) {
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
   if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-    console.log("out of frustum");
+    console.log(key, "out of frustum");
     return false;
   }
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-  // console.log(screenHeight, projectedRadius, Math.abs(projectedRadius) > 150);
-  return Math.abs(projectedRadius) > 100;
+  // console.log(key, Math.abs(projectedRadius) > 150);
+  return Math.abs(projectedRadius) > 120;
 }
 
 function traverseTreeWrapper(
@@ -124,7 +124,8 @@ function traverseTreeWrapper(
         [center_x, center_y, center_z],
         Math.max(...width),
         distance,
-        projViewMatrix
+        projViewMatrix,
+        key
       )
     ) {
       return [];
