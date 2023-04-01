@@ -75,8 +75,11 @@ function isLeadfNode(root, nodePages) {
 //   return error;
 // }
 let canvas = document.getElementById("screen-canvas");
-let screenWidth = window.innerWidth;
-let screenHeight = window.innerHeight;
+canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
+canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
+let screenWidth = canvas.clientWidth;
+let screenHeight = canvas.height;
+console.log(canvas.width, canvas.height);
 let fovRADIAN = Math.PI / 2;
 
 //create a view frustum based on viewProjectionMatrix
@@ -93,8 +96,7 @@ function isRendered(center, radius, distance, projViewMatrix, key) {
   }
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-  // console.log(key, Math.abs(projectedRadius) > 150);
-  return Math.abs(projectedRadius) > 120;
+  return Math.abs(projectedRadius) > 150;
 }
 
 function traverseTreeWrapper(
@@ -105,10 +107,10 @@ function traverseTreeWrapper(
   center_z,
   width,
   scale,
-  camera,
+  controls,
   projViewMatrix
 ) {
-  let cameraPosition = camera.position.toArray();
+  let cameraPosition = controls.target.toArray();
   function traverseTree(root, center_x, center_y, center_z, width) {
     // console.log(center_x, center_y, center_z, width);
     let [level, x, y, z] = root;
@@ -134,19 +136,19 @@ function traverseTreeWrapper(
     let x_right = center_x + width[0] / 2;
     let y_top = center_y + width[1] / 2;
     let y_bottom = center_y - width[1] / 2;
-    let z_near = center_z - width[2] / 2;
-    let z_far = center_z + width[2] / 2;
+    let z_near = center_z + width[2] / 2;
+    let z_far = center_z - width[2] / 2;
 
     let result = [key, nodePages[key].pointCount];
     direction.forEach((element, index) => {
       let [dx, dy, dz] = element;
-      let key = `${newLevel}-${2 * x + dx}-${2 * y + dy}-${2 * z + dz}`;
-      if (!(key in nodePages && nodePages[key].pointCount > 0)) {
+      let key1 = `${newLevel}-${2 * x + dx}-${2 * y + dy}-${2 * z + dz}`;
+      if (!(key1 in nodePages && nodePages[key].pointCount > 0)) {
         return [];
       }
       center_x = x_left;
       center_y = y_bottom;
-      center_z = z_near;
+      center_z = z_far;
       if (dx == 1) {
         center_x = x_right;
       }
@@ -154,7 +156,7 @@ function traverseTreeWrapper(
         center_y = y_top;
       }
       if (dz == 1) {
-        center_z = z_far;
+        center_z = z_near;
       }
       // console.log([width[0] / 2, width[1] / 2, width[2] / 2]);
       let result1 = traverseTree(
@@ -169,9 +171,9 @@ function traverseTreeWrapper(
     return result;
   }
   let finalPoints = traverseTree(root, center_x, center_y, center_z, [
-    width[0] * scale[0],
-    width[1] * scale[1],
-    width[2] * scale[2],
+    width[0],
+    width[1],
+    width[2],
   ]);
   return finalPoints;
 }

@@ -67,6 +67,9 @@ let x_min,
   controls;
 
 const canvas = document.getElementById("screen-canvas");
+
+canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
+canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
 function isTerminated(worker) {
   try {
     worker.postMessage(() => {});
@@ -266,7 +269,7 @@ async function filterkeyCountMap(keyMap) {
     if (!(keyMap[i] in bufferMap)) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
     } else {
-      console.log(`found ${keyMap[i]} in existing buffer`);
+      // console.log(`found ${keyMap[i]} in existing buffer`);
       newBufferMap[keyMap[i]] = {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
@@ -282,7 +285,7 @@ async function filterkeyCountMap(keyMap) {
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let cachedResult = cache.get(newKeyMap[i]);
     if (cachedResult) {
-      console.log(`found ${newKeyMap[i]} in cache`);
+      // console.log(`found ${newKeyMap[i]} in cache`);
       cachedResult = JSON.parse(cachedResult);
       let [positionBuffer, colorBuffer] = createBuffer(
         cachedResult.position,
@@ -301,7 +304,7 @@ async function filterkeyCountMap(keyMap) {
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
     let [Exist, data] = await doesExist(afterCheckingCache[i]);
     if (Exist) {
-      console.log(`found ${afterCheckingCache[i]} in POFS`);
+      // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
       let [positionBuffer, colorBuffer] = createBuffer(
         data.position,
@@ -340,7 +343,7 @@ async function retrivePoints(projectionViewMatrix) {
     center_z,
     [0.5 * widthx, 0.5 * widthy, 0.5 * widthz],
     scaleFactor,
-    camera,
+    controls,
     projectionViewMatrix
   );
 
@@ -367,12 +370,13 @@ async function retrivePoints(projectionViewMatrix) {
 
 async function createCameraProj() {
   camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
+    90,
+    canvas.width / canvas.height,
     0.1,
     20000
   );
-  camera.position.z = 20;
+  camera.position.set(0, 0, 500);
+  camera.updateProjectionMatrix();
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new OrbitControls(camera, canvas);
