@@ -24,6 +24,7 @@ let clear = async () => {
 // clear();
 
 let write = async (fileName, textToWrite) => {
+  console.log(fileName, "writing is started");
   const root = await navigator.storage.getDirectory();
   const fileHandle = await root.getFileHandle(`${fileName}.txt`, {
     create: true,
@@ -31,6 +32,7 @@ let write = async (fileName, textToWrite) => {
   const writableStream = await fileHandle.createWritable();
   await writableStream.write(textToWrite);
   await writableStream.close();
+  console.log(fileName, "writing is done");
 };
 
 let read = async (fileName) => {

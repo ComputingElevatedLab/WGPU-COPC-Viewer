@@ -17,6 +17,7 @@ let x_min,
   scaleY,
   scaleZ;
 let positions = [];
+// const filename = process.env.filename;
 const filename = process.env.filename;
 
 const readPoints = (id, getters) => {

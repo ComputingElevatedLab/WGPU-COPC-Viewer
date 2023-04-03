@@ -237,7 +237,7 @@ const syncThread = async () => {
         color: data[1],
       };
       let data_json_stringify = JSON.stringify(data_json);
-      write(fileName, data_json_stringify);
+      await write(fileName, data_json_stringify);
       let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
       bufferMap[data[2]] = {
         position: positionBuffer,
@@ -303,6 +303,7 @@ async function filterkeyCountMap(keyMap) {
   let filteredElements = [];
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
     let [Exist, data] = await doesExist(afterCheckingCache[i]);
+    console.log(Exist, data, afterCheckingCache[i]);
     if (Exist) {
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
@@ -408,6 +409,7 @@ async function loadCOPC() {
   // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const filename = process.env.filename;
   const copc = await Copc.create(filename);
+  console.log(copc.header);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
