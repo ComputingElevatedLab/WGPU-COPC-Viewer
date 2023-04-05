@@ -12,12 +12,33 @@ import { Copc, Key } from "copc";
 import Worker from "./worker/fetcher.worker.js";
 import { renderStages, device, stages, renderWrapper } from "./webgpu/renderer";
 import { traverseTreeWrapper } from "./passiveloader";
-import { write, read, doesExist, clear } from "./private_origin/file_manager";
+import {
+  write,
+  read,
+  doesExist,
+  clear,
+  create_P_Meta_Cache,
+  throttled_Update_Pers_Cache,
+} from "./private_origin/file_manager";
+import {
+  p_cache,
+  get_inCache,
+  getLRU_inCache,
+  getMRU_inCache,
+  sortObjectIntoMap,
+  mapIntoJSON,
+  put_inCache,
+} from "./private_origin/cache_manager";
+
 import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
 import { cache } from "./lru-cache/index";
 
 clear();
+const bytes = new Float32Array(59);
+
+const source_file_name = process.env.filename.split("/").pop();
+let state_meta = {};
 
 // ------------------- used to clear intital POFS that got created while writing code ---------------
 // (async () => {
@@ -65,11 +86,13 @@ let x_min,
   scaleFactor,
   params,
   controls;
+let pers_cache;
 
 const canvas = document.getElementById("screen-canvas");
 
 canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
 canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
+
 function isTerminated(worker) {
   try {
     worker.postMessage(() => {});
@@ -237,7 +260,12 @@ const syncThread = async () => {
         color: data[1],
       };
       let data_json_stringify = JSON.stringify(data_json);
-      await write(fileName, data_json_stringify);
+      await write(`${source_file_name}-${fileName}`, data_json_stringify);
+      state_meta[fileName] = {
+        count: 1,
+        date: new Date(),
+      };
+
       let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
       bufferMap[data[2]] = {
         position: positionBuffer,
@@ -250,7 +278,6 @@ const syncThread = async () => {
 };
 
 async function filterkeyCountMap(keyMap) {
-  console.log("asked for", keyMap);
   let newKeyMap = [];
   let newBufferMap = {};
   for (const key in toDeleteMap) {
@@ -274,6 +301,7 @@ async function filterkeyCountMap(keyMap) {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
       };
+      pers_cache = get_inCache(pers_cache, keyMap[i]);
       delete toDeleteArray[keyMap[i]];
     }
   }
@@ -287,6 +315,7 @@ async function filterkeyCountMap(keyMap) {
     if (cachedResult) {
       // console.log(`found ${newKeyMap[i]} in cache`);
       cachedResult = JSON.parse(cachedResult);
+      pers_cache = get_inCache(pers_cache, newKeyMap[i]);
       let [positionBuffer, colorBuffer] = createBuffer(
         cachedResult.position,
         cachedResult.color
@@ -302,8 +331,9 @@ async function filterkeyCountMap(keyMap) {
 
   let filteredElements = [];
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
-    let [Exist, data] = await doesExist(afterCheckingCache[i]);
-    console.log(Exist, data, afterCheckingCache[i]);
+    let [Exist, data] = await doesExist(
+      `${source_file_name}-${afterCheckingCache[i]}`
+    );
     if (Exist) {
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
@@ -316,11 +346,16 @@ async function filterkeyCountMap(keyMap) {
         color: colorBuffer,
       };
       cache.set(afterCheckingCache[i], JSON.stringify(data));
+      pers_cache = get_inCache(pers_cache, afterCheckingCache[i]);
     } else {
       filteredElements.push(afterCheckingCache[i], afterCheckingCache[i + 1]);
+      pers_cache = put_inCache(pers_cache, afterCheckingCache[i], {
+        count: 1,
+        date: Date.now(),
+      });
     }
   }
-
+  await throttled_Update_Pers_Cache(mapIntoJSON(cache));
   //-------------------------------------------------------------------------
 
   for (let key in toDeleteArray) {
@@ -382,7 +417,7 @@ async function createCameraProj() {
 
   controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.1;
+  controls.dampingFactor = 0.5;
   // controls.minAzimuthAngle = 0;
   // controls.maxAzimuthAngle = 0.25 * Math.PI;
   controls.minPolarAngle = 0;
@@ -409,7 +444,6 @@ async function loadCOPC() {
   // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const filename = process.env.filename;
   const copc = await Copc.create(filename);
-  console.log(copc.header);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
@@ -433,6 +467,9 @@ async function loadCOPC() {
 }
 
 (async () => {
+  await create_P_Meta_Cache();
+  pers_cache = await p_cache();
+  console.log("cache created successfully");
   await createCameraProj();
   console.log("file reading start");
   await loadCOPC();

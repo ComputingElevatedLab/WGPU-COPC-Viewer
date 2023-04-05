@@ -91,12 +91,11 @@ function isRendered(center, radius, distance, projViewMatrix, key) {
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
   if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-    console.log(key, "out of frustum");
     return false;
   }
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-  return Math.abs(projectedRadius) > 150;
+  return Math.abs(projectedRadius) > 250;
 }
 
 function traverseTreeWrapper(
@@ -111,6 +110,7 @@ function traverseTreeWrapper(
   projViewMatrix
 ) {
   let cameraPosition = controls.target.toArray();
+  console.log(cameraPosition, projViewMatrix);
   function traverseTree(root, center_x, center_y, center_z, width) {
     // console.log(center_x, center_y, center_z, width);
     let [level, x, y, z] = root;
