@@ -110,7 +110,6 @@ function traverseTreeWrapper(
   projViewMatrix
 ) {
   let cameraPosition = controls.target.toArray();
-  console.log(cameraPosition, projViewMatrix);
   function traverseTree(root, center_x, center_y, center_z, width) {
     // console.log(center_x, center_y, center_z, width);
     let [level, x, y, z] = root;

@@ -2,6 +2,8 @@ import { Copc, Key } from "copc";
 import * as THREE from "three";
 const color = new THREE.Color();
 const colors = [];
+let maxZ = -999;
+let minZ = 1000;
 let firstTime = true;
 var nodePages, pages, receivedData, copc;
 let x_min,
@@ -22,6 +24,13 @@ const filename = process.env.filename;
 
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);
+  if (returnPoint[2] > maxZ) {
+    maxZ = returnPoint[2];
+  }
+  if (returnPoint[2] < minZ) {
+    minZ = returnPoint[2];
+  }
+
   positions.push(returnPoint[0], returnPoint[1], returnPoint[2]);
   const vx = returnPoint[3] / 65535;
   color.setRGB(vx, vx, vx);
@@ -57,6 +66,7 @@ async function loadData(nodes, pages, copc, myRoot, pointCount) {
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }
+  console.log("my max is", maxZ, "my min is", minZ);
   postMessage([positions, colors]);
 }
 

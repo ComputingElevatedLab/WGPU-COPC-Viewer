@@ -280,6 +280,7 @@ const syncThread = async () => {
 async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
+  console.log("asked for", keyMap);
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
@@ -452,6 +453,9 @@ async function loadCOPC() {
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
+  console.log(z_max, z_min, widthz);
+  // for new COPC file widthz is 50, z_min is fine but width is wrong
+  widthz = 50;
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
   center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
