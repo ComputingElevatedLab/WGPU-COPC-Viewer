@@ -87,7 +87,7 @@ let x_min,
   params,
   controls;
 let pers_cache;
-let global_max_intensity = 0.1;
+let global_max_intensity = 0.5;
 
 const canvas = document.getElementById("screen-canvas");
 

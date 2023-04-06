@@ -43,57 +43,21 @@ function isLeadfNode(root, nodePages) {
   return true;
 }
 
-// function calculateSSE(
-//   distance,
-//   center_x,
-//   center_y,
-//   center_z,
-//   [width_x, width_y, width_z],
-//   camera,
-//   proj
-// ) {
-//   const box = new THREE.Box3(
-//     new THREE.Vector3(
-//       center_x - width_x / 2,
-//       center_y - width_y / 2,
-//       center_z - width_z / 2
-//     ),
-//     new THREE.Vector3(
-//       center_x + width_x / 2,
-//       center_y + width_y / 2,
-//       center_z + width_z / 2
-//     )
-//   );
-//   console.log(proj);
-//   const boxScreen = box
-//     .clone()
-//     .applyMatrix4(new THREE.Matrix4().fromArray(camera.invCamera))
-//     .applyMatrix4(new THREE.Matrix4().fromArray(proj));
-//   const boxSize = boxScreen.getSize(new THREE.Vector3()).length();
-//   console.log(boxScreen);
-//   const error = boxSize / distance;
-//   return error;
-// }
 let canvas = document.getElementById("screen-canvas");
 canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
 canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
 let screenWidth = canvas.clientWidth;
 let screenHeight = canvas.height;
-console.log(canvas.width, canvas.height);
 let fovRADIAN = Math.PI / 2;
 
-//create a view frustum based on viewProjectionMatrix
-//check containsBox
-
-// transforming center of bounding sphere from world space to screen space
 function isRendered(center, radius, distance, projViewMatrix, key) {
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
-  // if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-  //   console.log("outof frustum");
-  //   return false;
-  // }
+  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+    console.log("outof frustum");
+    return false;
+  }
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
   return Math.abs(projectedRadius) > 120;
@@ -113,7 +77,6 @@ function traverseTreeWrapper(
   let cameraPosition = camera.eyePos();
   console.log(cameraPosition);
   function traverseTree(root, center_x, center_y, center_z, width) {
-    // console.log(center_x, center_y, center_z, width);
     let [level, x, y, z] = root;
     let newLevel = level + 1;
     let key = level + "-" + x + "-" + y + "-" + z;
@@ -159,7 +122,6 @@ function traverseTreeWrapper(
       if (dz == 1) {
         center_z = z_near;
       }
-      // console.log([width[0] / 2, width[1] / 2, width[2] / 2]);
       let result1 = traverseTree(
         [newLevel, 2 * x + dx, 2 * y + dy, 2 * z + dz],
         center_x,
