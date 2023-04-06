@@ -9,7 +9,6 @@ let vs = `
         @location(0) color: vec4<f32>,
     };
 
-
     struct paramsUniform {
         width_x:f32,
         width_y:f32,
@@ -17,7 +16,8 @@ let vs = `
         x_min: f32,
         y_min: f32,
         z_min: f32,
-        current_Axis: f32
+        current_Axis: f32,
+        max_Intensity: f32
     };
 
     struct cmapUniform {
@@ -41,7 +41,7 @@ let vs = `
     fn main(in: VertexInput, @builtin(instance_index) inst_index:u32, @builtin(vertex_index) vertexIndex : u32)->VertexOut{
         var out:VertexOut;
         var cMapIndex:i32; 
-        var radius:f32 = 2.0;
+        var radius:f32 = 1.0;
         var position:vec3<f32> = in.position - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z);
         if(params.current_Axis == 2.0){
             cMapIndex = i32((abs(in.position.z - params.z_min)/params.width_z) *19);
@@ -53,17 +53,12 @@ let vs = `
             cMapIndex = i32((abs(in.position.x - params.x_min)/params.width_x) *19);
         }
         let cmapped = cMap.colors[cMapIndex];
-        var factor = in.color.x;
+        var factor = in.color.x/params.max_Intensity;
         if(factor < 0.1){
             factor = 0.35;
         }
         out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0)*factor;
-        let angle = f32(vertexIndex)*2.0*PI/16;
-        if((vertexIndex+1)%2 == 0){
-            out.position = MVP_Matrix* vec4<f32>(position, 1.0);
-            return out;
-        }
-        position = position + vec3(cos(angle)*radius, sin(angle)*radius, 0.0);
+        position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);
         out.position = MVP_Matrix* vec4<f32>(position, 1.0);
         return out;
     }

@@ -87,6 +87,7 @@ let x_min,
   params,
   controls;
 let pers_cache;
+let global_max_intensity = 0.1;
 
 const canvas = document.getElementById("screen-canvas");
 
@@ -130,6 +131,10 @@ function createWorker(data1, data2) {
         workerCount += 1;
         let position = postMessageRes[0];
         let color = postMessageRes[1];
+        let [minZ, maxZ, maxIntensity] = postMessageRes[2];
+        if (maxIntensity > global_max_intensity) {
+          global_max_intensity = maxIntensity;
+        }
         let localPosition = [];
         let localColor = [];
         for (let i = 0; i < position.length; i++) {
@@ -440,6 +445,7 @@ async function loadCOPC() {
   // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const filename = process.env.filename;
   const copc = await Copc.create(filename);
+  console.log(copc.header);
   scaleFactor = copc.header.scale;
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
@@ -537,4 +543,5 @@ export {
   toDeleteMap,
   wait,
   controls,
+  global_max_intensity,
 };

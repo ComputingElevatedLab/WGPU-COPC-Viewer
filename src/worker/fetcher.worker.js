@@ -4,6 +4,7 @@ const color = new THREE.Color();
 const colors = [];
 let maxZ = -999;
 let minZ = 1000;
+let maxIntensity = -100;
 let firstTime = true;
 var nodePages, pages, receivedData, copc;
 let x_min,
@@ -32,7 +33,11 @@ const readPoints = (id, getters) => {
   }
 
   positions.push(returnPoint[0], returnPoint[1], returnPoint[2]);
-  const vx = returnPoint[3] / 65535;
+  // console.log("intensity is", returnPoint[3]);
+  const vx = returnPoint[3];
+  if (vx > maxIntensity) {
+    maxIntensity = vx;
+  }
   color.setRGB(vx, vx, vx);
   colors.push(color.r, color.g, color.b);
   firstTime = false;
@@ -66,8 +71,15 @@ async function loadData(nodes, pages, copc, myRoot, pointCount) {
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }
-  // console.log("my max is", maxZ, "my min is", minZ);
-  postMessage([positions, colors]);
+  console.log(
+    "my max is",
+    maxZ,
+    "my min is",
+    minZ,
+    "maxIntensity is",
+    maxIntensity
+  );
+  postMessage([positions, colors, [minZ, maxZ, maxIntensity]]);
 }
 
 load();

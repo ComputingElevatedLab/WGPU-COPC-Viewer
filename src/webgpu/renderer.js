@@ -5,6 +5,7 @@ import {
   toDeleteMap,
   wait,
   controls,
+  global_max_intensity,
 } from "../index.js";
 import Stats from "three/examples/jsm/libs/stats.module";
 
@@ -22,6 +23,7 @@ let positionBuffer;
 let colorBuffer;
 let MVP_Buffer;
 var lasInfoBuffer;
+let maxIntensityBuffer;
 let commandEncoder;
 let renderPassDescriptor;
 let renderDepthTexture;
@@ -115,11 +117,11 @@ function recoverFromDeviceLoss(data) {
   });
 })();
 
-async function updateAxis() {
-  param[param.length - 1] = currentAxis;
+async function updateMaxIntensity() {
+  param[param.length - 1] = global_max_intensity;
   const stagingBuffer = device.createBuffer({
     usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
-    size: 28,
+    size: 32,
     mappedAtCreation: true,
   });
 
@@ -127,7 +129,23 @@ async function updateAxis() {
   stagingData.set(param);
   stagingBuffer.unmap();
   const copyEncoder = device.createCommandEncoder();
-  copyEncoder.copyBufferToBuffer(stagingBuffer, 24, paramsBuffer, 24, 4);
+  copyEncoder.copyBufferToBuffer(stagingBuffer, 28, paramsBuffer, 28, 4);
+  device.queue.submit([copyEncoder.finish()]);
+}
+
+async function updateAxis() {
+  param[param.length - 2] = currentAxis;
+  const stagingBuffer = device.createBuffer({
+    usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+    size: 32,
+    mappedAtCreation: true,
+  });
+
+  const stagingData = new Float32Array(stagingBuffer.getMappedRange());
+  stagingData.set(param);
+  stagingBuffer.unmap();
+  const copyEncoder = device.createCommandEncoder();
+  copyEncoder.copyBufferToBuffer(stagingBuffer, 24, paramsBuffer, 24, 8);
   device.queue.submit([copyEncoder.finish()]);
 }
 
@@ -270,14 +288,14 @@ function initUniform(cam, projMatrix, params) {
   proj = projMatrix;
   param = params;
   params.push(currentAxis);
+  params.push(global_max_intensity);
   // params
   paramsBuffer = device.createBuffer({
-    size: 7 * 4,
+    size: 8 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     mappedAtCreation: true,
   });
   let mapArray_params = new Float32Array(paramsBuffer.getMappedRange());
-
   mapArray_params.set(params);
   paramsBuffer.unmap();
 
@@ -473,6 +491,7 @@ async function renderStages(position, color) {
 async function renderWrapper() {
   await createBindGroups();
   await createDepthBuffer();
+  await updateMaxIntensity();
   render();
   // itenaryStart(moveCamera);
 }
@@ -506,7 +525,7 @@ function render(timestamp) {
     renderPass.setVertexBuffer(1, bufferMap[key].color);
     // console.log("length is", +bufferMap[key].position.label / 3);
     numPoints = +bufferMap[key].position.label / 3;
-    renderPass.draw(3, numPoints, 0, 0);
+    renderPass.draw(9, numPoints, 0, 0);
   }
   renderPass.end();
   device.queue.submit([commandEncoder.finish()]);
