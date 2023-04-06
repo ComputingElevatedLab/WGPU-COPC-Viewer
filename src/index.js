@@ -280,7 +280,7 @@ const syncThread = async () => {
 async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
-  // console.log("asked for", keyMap);
+  console.log("asked for", keyMap);
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
@@ -391,7 +391,7 @@ async function retrivePoints(projectionViewMatrix) {
     center_z,
     [0.5 * widthx, 0.5 * widthy, 0.5 * widthz],
     scaleFactor,
-    controls,
+    camera,
     projectionViewMatrix
   );
   const endTime4 = performance.now();
@@ -419,35 +419,17 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new THREE.PerspectiveCamera(
-    90,
-    canvas.width / canvas.height,
-    0.1,
-    20000
-  );
-  camera.position.set(0, 0, 500);
-  camera.updateProjectionMatrix();
-  // camera.lookAt(new THREE.Vector3(0, 0, 0));
+  camera = new ArcballCamera([0, 0, 2000], [0, 0, 0], [0, 1, 0], 500, [
+    window.innerWidth,
+    window.innerHeight,
+  ]);
 
-  controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.5;
-  // controls.minAzimuthAngle = 0;
-  // controls.maxAzimuthAngle = 0.25 * Math.PI;
-  controls.minPolarAngle = 0;
-  controls.maxPolarAngle = Math.PI;
-  controls.rotateSpeed = 2;
-  controls.zoomSpeed = 2;
-  controls.panSpeed = 5;
-  // controls.autoRotate = true;
-  // controls.autoRotateSpeed = 1;
-  controls.update();
   proj = mat4.perspective(
     mat4.create(),
     (90 * Math.PI) / 180.0,
     canvas.width / canvas.height,
     0.1,
-    20000
+    8000
   );
 }
 

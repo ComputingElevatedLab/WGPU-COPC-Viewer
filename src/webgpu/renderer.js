@@ -161,22 +161,13 @@ async function init() {
 
   canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
+      let cameraPosition = camera.eyePos();
       throttleTreeTravel(projView);
     }
   });
 
   window.addEventListener("wheel", (event) => {
-    // const zoomSpeed = 0.0002;
-    // const zoomDelta = event.deltaY * zoomSpeed;
-    // const cameraPosition = controls.object.position
-    //   .clone()
-    //   .sub(controls.target)
-    //   .multiplyScalar(1 + zoomDelta)
-    //   .add(controls.target);
-
-    // // set the new camera position and update the OrbitControls
-    // controls.object.position.copy(cameraPosition);
-    // controls.update();
+    console.log(camera.eyePos());
     throttleTreeTravel(projView);
   });
 }
@@ -333,15 +324,39 @@ function initUniform(cam, projMatrix, params) {
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
+  var controller = new Controller();
 
-  const viewMatrix = new Float32Array(16);
-  viewMatrix.set(camera.matrixWorldInverse.elements);
-  let modelMatrix = mat4.create();
-  mat4.rotateY(modelMatrix, modelMatrix, -Math.PI / 2);
-  projView = mat4.mul(projView, proj, viewMatrix);
-  const mvpMatrix = mat4.create();
-  mat4.mul(mvpMatrix, projView, modelMatrix);
-  return mvpMatrix;
+  controller.mousemove = function (prev, cur, evt) {
+    if (evt.buttons == 1) {
+      // console.log("rotate");
+      camera.rotate(prev, cur);
+    } else if (evt.buttons == 2) {
+      camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
+    }
+  };
+  controller.wheel = function (amt) {
+    // console.log(amt);
+    camera.zoom(amt);
+  };
+  controller.pinch = controller.wheel;
+  controller.twoFingerDrag = function (drag) {
+    camera.pan(drag);
+  };
+  controller.registerForCanvas(canvas);
+  var canvasVisible = false;
+  var observer = new IntersectionObserver(
+    function (e) {
+      if (e[0].isIntersecting) {
+        canvasVisible = true;
+      } else {
+        canvasVisible = false;
+      }
+    },
+    { threshold: [0] }
+  );
+  observer.observe(canvas);
+  projView = mat4.mul(projView, proj, camera.camera);
+  return projView;
 }
 
 async function createBindGroups() {
@@ -466,13 +481,8 @@ function render(timestamp) {
   stats.update();
   var startTime = performance.now();
   commandEncoder = device.createCommandEncoder();
-  const viewMatrix = new Float32Array(16);
-  viewMatrix.set(camera.matrixWorldInverse.elements);
-  let modelMatrix = mat4.create();
   //  this is not helpful for tree traversal so model matrix rotation is removed for now
-  mat4.rotateX(modelMatrix, modelMatrix, (0 * -Math.PI) / 4);
-  projView = mat4.mul(projView, proj, viewMatrix);
-  mat4.mul(projView, projView, modelMatrix);
+  projView = mat4.mul(projView, proj, camera.camera);
   // update(timestamp);
   encodedCommand();
 
@@ -496,11 +506,10 @@ function render(timestamp) {
     renderPass.setVertexBuffer(1, bufferMap[key].color);
     // console.log("length is", +bufferMap[key].position.label / 3);
     numPoints = +bufferMap[key].position.label / 3;
-    renderPass.draw(17, numPoints, 0, 0);
+    renderPass.draw(3, numPoints, 0, 0);
   }
   renderPass.end();
   device.queue.submit([commandEncoder.finish()]);
-  controls.update();
   var endTime = performance.now();
   requestAnimationFrame(render);
 }

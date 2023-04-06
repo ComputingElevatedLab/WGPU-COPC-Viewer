@@ -66,7 +66,7 @@ async function loadData(nodes, pages, copc, myRoot, pointCount) {
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }
-  console.log("my max is", maxZ, "my min is", minZ);
+  // console.log("my max is", maxZ, "my min is", minZ);
   postMessage([positions, colors]);
 }
 

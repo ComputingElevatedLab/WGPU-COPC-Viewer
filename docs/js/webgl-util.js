@@ -335,17 +335,13 @@ ArcballCamera.prototype.zoom = function (amount) {
 };
 
 ArcballCamera.prototype.pan = function (mouseDelta) {
-  var zoomFactor = Math.abs(this.translation[14]);
-  var scaleFactor = zoomFactor * this.zoomSpeed;
-
   var delta = vec4.set(
     vec4.create(),
-    mouseDelta[0] * this.invScreen[0] * scaleFactor,
-    mouseDelta[1] * this.invScreen[1] * scaleFactor,
+    mouseDelta[0] * this.invScreen[0] * Math.abs(this.translation[14]),
+    mouseDelta[1] * this.invScreen[1] * Math.abs(this.translation[14]),
     0,
     0
   );
-
   var worldDelta = vec4.transformMat4(vec4.create(), delta, this.invCamera);
   var translation = mat4.fromTranslation(mat4.create(), worldDelta);
   this.centerTranslation = mat4.mul(
