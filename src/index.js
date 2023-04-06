@@ -280,7 +280,7 @@ const syncThread = async () => {
 async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
-  console.log("asked for", keyMap);
+  // console.log("asked for", keyMap);
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
@@ -293,6 +293,7 @@ async function filterkeyCountMap(keyMap) {
     return acc;
   }, {});
 
+  const startTime1 = performance.now();
   for (let i = 0; i < keyMap.length; i += 2) {
     if (!(keyMap[i] in bufferMap)) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
@@ -306,9 +307,12 @@ async function filterkeyCountMap(keyMap) {
       delete toDeleteArray[keyMap[i]];
     }
   }
+  const endTime1 = performance.now();
+  console.log(`Time taken: ${endTime1 - startTime1}ms`);
 
   // --------------------- these are new ones
   // are they in cache?
+  const startTime2 = performance.now();
 
   let afterCheckingCache = [];
   for (let i = 0; i < newKeyMap.length; i += 2) {
@@ -329,7 +333,10 @@ async function filterkeyCountMap(keyMap) {
       afterCheckingCache.push(newKeyMap[i], newKeyMap[i + 1]);
     }
   }
+  const endTime2 = performance.now();
+  console.log(`Time taken: ${endTime2 - startTime2}ms`);
 
+  const startTime3 = performance.now();
   let filteredElements = [];
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
     let [Exist, data] = await doesExist(
@@ -356,6 +363,9 @@ async function filterkeyCountMap(keyMap) {
       });
     }
   }
+  const endTime3 = performance.now();
+  console.log(`Time taken: ${endTime3 - startTime3}ms`);
+
   await throttled_Update_Pers_Cache(mapIntoJSON(cache));
   //-------------------------------------------------------------------------
 
@@ -366,12 +376,13 @@ async function filterkeyCountMap(keyMap) {
     };
   }
   bufferMap = newBufferMap;
-  console.log(`to fetch this ${filteredElements}`);
+  // console.log(`to fetch this ${filteredElements}`);
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
 
 async function retrivePoints(projectionViewMatrix) {
+  const startTime4 = performance.now();
   let keyCountMap = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
@@ -383,6 +394,8 @@ async function retrivePoints(projectionViewMatrix) {
     controls,
     projectionViewMatrix
   );
+  const endTime4 = performance.now();
+  console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
 
   keyCountMap = await filterkeyCountMap(keyCountMap);
   clock.getDelta();
@@ -453,7 +466,7 @@ async function loadCOPC() {
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
-  console.log(z_max, z_min, widthz);
+  // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
   widthz = 50;
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
@@ -471,20 +484,53 @@ async function loadCOPC() {
 }
 
 (async () => {
+  const start6 = performance.now();
   await create_P_Meta_Cache();
+  const end6 = performance.now();
+  console.log(`Time taken to create meta cache: ${end6 - start6}ms`);
+
+  const start7 = performance.now();
   pers_cache = await p_cache();
-  console.log("cache created successfully");
+  const end7 = performance.now();
+  console.log(`Time taken to make LRU meta cache: ${end7 - start7}ms`);
+  // console.log("cache created successfully");
+
+  const start8 = performance.now();
   await createCameraProj();
-  console.log("file reading start");
+  const end8 = performance.now();
+  console.log(`Time taken to create camera: ${end8 - start8}ms`);
+  // console.log("file reading start");
+
+  const start9 = performance.now();
   await loadCOPC();
-  console.log("initialize the uniform buffers");
+  const end9 = performance.now();
+  console.log(`Time taken to load COPC file: ${end9 - start9}ms`);
+  // console.log("initialize the uniform buffers");
+
+  const start10 = performance.now();
   let projViewMatrix = await stages(camera, proj, params);
-  console.log("data loading start");
+  const end10 = performance.now();
+  console.log(`Time taken to do initial rendering setup: ${end10 - start10}ms`);
+  // console.log("data loading start");
+
+  const start11 = performance.now();
   await retrivePoints(projViewMatrix);
-  console.log("data loaded");
+  const end11 = performance.now();
+  console.log(
+    `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`
+  );
+  // console.log("data loaded");
+
+  const start12 = performance.now();
   await renderWrapper();
-  console.log("render done");
+  const end12 = performance.now();
+  console.log(`Time taken to render: ${end12 - start12}ms`);
+  // console.log("render done");
 })();
+
+// ------------------------------------------------------------------------------------
+// -------------make iternary of camera ----------------------------------------------
+
 // render by WebGPU
 // console.log(colors);
 // renderStages(positions, colors);

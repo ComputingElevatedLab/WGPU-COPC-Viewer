@@ -44,7 +44,6 @@ function throttle(callback, interval) {
   let enableCall = true;
   return function (...args) {
     if (!enableCall) return;
-    console.log("called now");
     enableCall = false;
     callback.apply(this, args);
     setTimeout(() => (enableCall = true), interval);
@@ -52,6 +51,40 @@ function throttle(callback, interval) {
 }
 
 let throttleTreeTravel = throttle(retrivePoints, 1000);
+
+// ------------------------------- camera itenary
+
+const iternary = [
+  { x: -100, y: 1000, z: 700 },
+  { x: 0, y: 1000, z: 700 },
+  { x: 0, y: 500, z: 300 },
+  { x: 100, y: 200, z: 300 },
+  { x: 0, y: 100, z: 100 },
+];
+
+function moveCamera() {
+  return new Promise((resolve, reject) => {
+    controls.object.position.set(
+      iternary[count].x,
+      iternary[count].y,
+      iternary[count].z
+    );
+    render();
+    throttleTreeTravel(projView);
+    resolve("done");
+  });
+}
+
+let count = 0;
+function itenaryStart(fn) {
+  fn().then((response) => {
+    console.log("done1");
+    count++;
+    if (count < 5) setTimeout(() => itenaryStart(fn), 10000);
+  });
+}
+
+// -----------------------------------------------------------------
 
 function configureSwapChain(device) {
   context.configure({
@@ -132,7 +165,18 @@ async function init() {
     }
   });
 
-  window.addEventListener("wheel", () => {
+  window.addEventListener("wheel", (event) => {
+    // const zoomSpeed = 0.0002;
+    // const zoomDelta = event.deltaY * zoomSpeed;
+    // const cameraPosition = controls.object.position
+    //   .clone()
+    //   .sub(controls.target)
+    //   .multiplyScalar(1 + zoomDelta)
+    //   .add(controls.target);
+
+    // // set the new camera position and update the OrbitControls
+    // controls.object.position.copy(cameraPosition);
+    // controls.update();
     throttleTreeTravel(projView);
   });
 }
@@ -411,56 +455,54 @@ async function renderStages(position, color) {
   requestAnimationFrame(render2);
 }
 // -----------------------------------------------------------------------------
-
 async function renderWrapper() {
   await createBindGroups();
   await createDepthBuffer();
-  requestAnimationFrame(render);
+  render();
+  // itenaryStart(moveCamera);
+}
 
-  function render(timestamp) {
-    stats.update();
-    var startTime = performance.now();
-    commandEncoder = device.createCommandEncoder();
-    const viewMatrix = new Float32Array(16);
-    viewMatrix.set(camera.matrixWorldInverse.elements);
-    let modelMatrix = mat4.create();
-    //  this is not helpful for tree traversal so model matrix rotation is removed for now
-    mat4.rotateX(modelMatrix, modelMatrix, (0 * -Math.PI) / 4);
-    projView = mat4.mul(projView, proj, viewMatrix);
-    mat4.mul(projView, projView, modelMatrix);
-    // update(timestamp);
-    encodedCommand();
+function render(timestamp) {
+  stats.update();
+  var startTime = performance.now();
+  commandEncoder = device.createCommandEncoder();
+  const viewMatrix = new Float32Array(16);
+  viewMatrix.set(camera.matrixWorldInverse.elements);
+  let modelMatrix = mat4.create();
+  //  this is not helpful for tree traversal so model matrix rotation is removed for now
+  mat4.rotateX(modelMatrix, modelMatrix, (0 * -Math.PI) / 4);
+  projView = mat4.mul(projView, proj, viewMatrix);
+  mat4.mul(projView, projView, modelMatrix);
+  // update(timestamp);
+  encodedCommand();
 
-    // device.queue.writeBuffer(MVP_Buffer, 0, worldViewProj, 16);
+  // device.queue.writeBuffer(MVP_Buffer, 0, worldViewProj, 16);
 
-    let wvStagingBuffer = device.createBuffer({
-      size: 4 * 16,
-      usage: GPUBufferUsage.COPY_SRC,
-      mappedAtCreation: true,
-    });
-    const stagingUniformData = new Float32Array(
-      wvStagingBuffer.getMappedRange()
-    );
-    stagingUniformData.set(projView);
-    wvStagingBuffer.unmap();
-    commandEncoder.copyBufferToBuffer(wvStagingBuffer, 0, MVP_Buffer, 0, 64);
-    let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
-    renderPass.setPipeline(renderPipeline);
-    renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
-    renderPass.setBindGroup(0, mvp_BG);
-    for (let key in bufferMap) {
-      renderPass.setVertexBuffer(0, bufferMap[key].position);
-      renderPass.setVertexBuffer(1, bufferMap[key].color);
-      // console.log("length is", +bufferMap[key].position.label / 3);
-      numPoints = +bufferMap[key].position.label / 3;
-      renderPass.draw(17, numPoints, 0, 0);
-    }
-    renderPass.end();
-    device.queue.submit([commandEncoder.finish()]);
-    controls.update();
-    var endTime = performance.now();
-    requestAnimationFrame(render);
+  let wvStagingBuffer = device.createBuffer({
+    size: 4 * 16,
+    usage: GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
+  const stagingUniformData = new Float32Array(wvStagingBuffer.getMappedRange());
+  stagingUniformData.set(projView);
+  wvStagingBuffer.unmap();
+  commandEncoder.copyBufferToBuffer(wvStagingBuffer, 0, MVP_Buffer, 0, 64);
+  let renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
+  renderPass.setPipeline(renderPipeline);
+  renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
+  renderPass.setBindGroup(0, mvp_BG);
+  for (let key in bufferMap) {
+    renderPass.setVertexBuffer(0, bufferMap[key].position);
+    renderPass.setVertexBuffer(1, bufferMap[key].color);
+    // console.log("length is", +bufferMap[key].position.label / 3);
+    numPoints = +bufferMap[key].position.label / 3;
+    renderPass.draw(17, numPoints, 0, 0);
   }
+  renderPass.end();
+  device.queue.submit([commandEncoder.finish()]);
+  controls.update();
+  var endTime = performance.now();
+  requestAnimationFrame(render);
 }
 
 export { renderStages, device, stages, renderWrapper, throttle };

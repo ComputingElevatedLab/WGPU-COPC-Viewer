@@ -113,7 +113,7 @@ let read = async (fileName) => {
 
 let doesExist = async (fileName) => {
   try {
-    console.log(fileName);
+    // console.log(fileName);
     let fileToCheck = `${fileName}.bin`;
     const root = await navigator.storage.getDirectory();
     const fileHandle = await root.getFileHandle(fileToCheck);
@@ -121,7 +121,6 @@ let doesExist = async (fileName) => {
     let found = permissionStatus == "granted" ? true : false;
     let retrived_blob = await fileHandle.getFile();
     var reader = new FileReader();
-    console.log("found");
     return await new Promise((resolve, reject) => {
       reader.onload = function () {
         resolve([true, JSON.parse(reader.result)]);
