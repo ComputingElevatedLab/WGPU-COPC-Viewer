@@ -34,7 +34,6 @@ import "./styles/main.css";
 import { fillArray, fillMidNodes } from "./helper";
 import { cache } from "./lru-cache/index";
 
-clear();
 const bytes = new Float32Array(59);
 
 const source_file_name = process.env.filename.split("/").pop();
@@ -424,7 +423,7 @@ async function retrivePoints(projectionViewMatrix) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 2000], [0, 0, 0], [0, 1, 0], 500, [
+  camera = new ArcballCamera([0, 0, 500], [0, 0, 0], [0, 1, 0], 500, [
     window.innerWidth,
     window.innerHeight,
   ]);
@@ -456,7 +455,11 @@ async function loadCOPC() {
   widthz = Math.abs(z_max - z_min);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  widthz = 50;
+  // widthz = 50;
+  
+  console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube)
+
+
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
   center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
@@ -472,6 +475,7 @@ async function loadCOPC() {
 }
 
 (async () => {
+  // await clear()
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();

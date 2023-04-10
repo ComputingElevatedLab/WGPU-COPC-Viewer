@@ -1,6 +1,6 @@
 import LRUCache from "lru-cache";
 const options = {
-  max: 50,
+  max: 500,
   //   ttl: 100 * 60 * 10,   i dont think i need this as the node value wont be time dependent
   allowStale: false,
   updateAgeOnGet: true,

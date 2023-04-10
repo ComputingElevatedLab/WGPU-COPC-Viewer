@@ -25,6 +25,7 @@ const filename = process.env.filename;
 
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);
+  // console.log(returnPoint)
   if (returnPoint[2] > maxZ) {
     maxZ = returnPoint[2];
   }
@@ -38,7 +39,7 @@ const readPoints = (id, getters) => {
   if (vx > maxIntensity) {
     maxIntensity = vx;
   }
-  color.setRGB(vx, vx, vx);
+  color.setRGB(returnPoint[3], returnPoint[3], returnPoint[3]);
   colors.push(color.r, color.g, color.b);
   firstTime = false;
 };
@@ -67,18 +68,11 @@ async function load() {
 async function loadData(nodes, pages, copc, myRoot, pointCount) {
   // console.log(copc, myRoot);
   const view = await Copc.loadPointDataView(filename, copc, myRoot);
-  let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
+    let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
+  // let getters = ["X", "Y", "Z", "Red", "Green", "Blue"].map(view.getter);
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }
-  console.log(
-    "my max is",
-    maxZ,
-    "my min is",
-    minZ,
-    "maxIntensity is",
-    maxIntensity
-  );
   postMessage([positions, colors, [minZ, maxZ, maxIntensity]]);
 }
 

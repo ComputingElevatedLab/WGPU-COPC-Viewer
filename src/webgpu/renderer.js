@@ -323,7 +323,7 @@ function initUniform(cam, projMatrix, params) {
     [0.7, 0.0, 0.0],
     [0.5, 0.0, 0.0],
     [0.3, 0.0, 0.0],
-    [0.1, 0.0, 0.0],
+    [0.1, 0.5, 0.0],
   ];
 
   hsv_colors = hsv_colors.flat();
@@ -525,7 +525,7 @@ function render(timestamp) {
     renderPass.setVertexBuffer(1, bufferMap[key].color);
     // console.log("length is", +bufferMap[key].position.label / 3);
     numPoints = +bufferMap[key].position.label / 3;
-    renderPass.draw(3, numPoints, 0, 0);
+    renderPass.draw(4, numPoints, 0, 0);
   }
   renderPass.end();
   device.queue.submit([commandEncoder.finish()]);

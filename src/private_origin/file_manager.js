@@ -62,13 +62,17 @@ let throttled_Update_Pers_Cache = throttle(updatePersCache, 30000);
 let clear = async () => {
   const root = await navigator.storage.getDirectory();
   const fileNames = await root.keys();
-  const files = Array.from(fileNames);
-  for (const fileName of files) {
-    const fileHandle = await root.getFile(fileName);
+  let x = await fileNames.next();
+  while (!x.done) {
+    console.log("hello")
+    let fileName = x.value;
+    const fileHandle = await root.getFileHandle(fileName);
     await fileHandle.remove();
+    x = await fileNames.next();
   }
 };
 
+// clear()
 // --------------------------- indepedent readBinary file code wrote to test before putting this part inside doesExist --------------------------
 let readBin = async (fileName) => {
   let fileToCheck = `${fileName}.bin`;
@@ -113,20 +117,25 @@ let read = async (fileName) => {
 
 let doesExist = async (fileName) => {
   try {
-    // console.log(fileName);
     let fileToCheck = `${fileName}.bin`;
     const root = await navigator.storage.getDirectory();
     const fileHandle = await root.getFileHandle(fileToCheck);
     const permissionStatus = await fileHandle.queryPermission();
     let found = permissionStatus == "granted" ? true : false;
     let retrived_blob = await fileHandle.getFile();
-    var reader = new FileReader();
-    return await new Promise((resolve, reject) => {
-      reader.onload = function () {
-        resolve([true, JSON.parse(reader.result)]);
-      };
-      reader.readAsText(retrived_blob);
-    });
+    if(retrived_blob.size>0){
+      var reader = new FileReader();
+      return await new Promise((resolve, reject) => {
+        reader.onload = function () {
+          resolve([true, JSON.parse(reader.result)]);
+        };
+        reader.readAsText(retrived_blob);
+      });
+       
+    }
+    else{
+      return [ true, {position:[], color: []}]
+    } 
   } catch (error) {
     if (error.name === "NotFoundError") {
       console.log("file not found");
