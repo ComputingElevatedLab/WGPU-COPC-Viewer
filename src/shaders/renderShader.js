@@ -56,13 +56,20 @@ let vs = `
         if(cMapIndex>19){
             cMapIndex = 19;
         }
+
+       
         let cmapped = cMap.colors[cMapIndex];
-        var factor = in.color.x/params.max_Intensity;
-        out.color = vec4(cmapped.x/65535.0, cmapped.y/65535.0, cmapped.z/65535.0, 1.0)*factor;
-        if(factor < 0.1){
-            factor = 0.35;
+        var factor = in.color.x/(32767.0);
+        out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0)*factor;
+        if(in.color.x <0.01){
+            // out.color = vec4(1.0, 0.0, 0.0, 0.5);  
+            factor = 0.5; 
+        }
+        if(factor > 1.0){
+            factor = 0.85;
             out.color = vec4(0.0, 1.0, 0.0, 1.0)*factor;
         }
+
        
         position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);
         position.z = 1.5*position.z;

@@ -64,7 +64,7 @@ function isRendered(center, radius, distance, projViewMatrix, key, width) {
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
 
-  console.log(pixel_size, projectedRadius)
+  // console.log(pixel_size, projectedRadius)
   
   return Math.abs(projectedRadius) > 50;
 }
@@ -77,10 +77,10 @@ function traverseTreeWrapper(
   center_z,
   width,
   scale,
-  camera,
+  controls,
   projViewMatrix
 ) {
-  let cameraPosition = camera.eyePos();
+  let cameraPosition = controls.object.position.toArray();
   console.log(cameraPosition);
   let width_x_world = width[0]
   console.log(width)

@@ -251,6 +251,7 @@ var getGLExtension = function (gl, ext) {
  */
 var ArcballCamera = function (eye, center, up, zoomSpeed, screenDims) {
   var veye = vec3.set(vec3.create(), eye[0], eye[1], eye[2]);
+  this.position = veye
   var vcenter = vec3.set(vec3.create(), center[0], center[1], center[2]);
   var vup = vec3.set(vec3.create(), up[0], up[1], up[2]);
   vec3.normalize(vup, vup);

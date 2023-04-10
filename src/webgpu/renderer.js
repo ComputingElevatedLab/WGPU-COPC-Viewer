@@ -40,6 +40,7 @@ let paramsBuffer;
 let currentAxis = 2;
 let param;
 const stats = Stats();
+let controller
 document.body.appendChild(stats.dom);
 
 function throttle(callback, interval) {
@@ -52,17 +53,41 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 3000);
+let throttleTreeTravel = throttle(retrivePoints, 1000);
 
 // ------------------------------- camera itenary
 
 const iternary = [
-  { x: -100, y: 1000, z: 700 },
-  { x: 0, y: 1000, z: 700 },
-  { x: 0, y: 500, z: 300 },
-  { x: 100, y: 200, z: 300 },
-  { x: 0, y: 100, z: 100 },
+  [ -30.4, 45.2, 1000],
+  [-30.4, 45.2, 385],
+  [ -200,-1180, -50 ],
+  [-100, -800, -50],
+  [ 0, 1150, -100 ],
 ];
+
+
+// let counter = 0;
+// let testTimer = setInterval( function() { 
+// // make new camera
+// // camera = new ArcballCamera(iternary[4], [0, -200, 0], [0, 1, 0], 500, [
+// //   window.innerWidth,
+// //   window.innerHeight,
+// // ]);
+// // controller.wheel(300)
+// projView = mat4.mul(projView, proj, camera.camera);
+// // check projection matrix projView
+// throttleTreeTravel(projView, camera); 
+// camera.rotate([0, 0], [0, 100])
+// camera.updateCameraMatrix()
+// render()
+// counter++
+// if(counter == 20){
+//   clearInterval(testTimer)
+//   return;
+// }
+// }, 1000);
+
+
 
 function moveCamera() {
   return new Promise((resolve, reject) => {
@@ -304,31 +329,31 @@ function initUniform(cam, projMatrix, params) {
   }
   // create colormap
   let hsv_colors = [
-    [0.0, 0.0, 0.5],
-    [0.0, 0.2, 0.7],
-    [0.0, 0.4, 0.9],
-    [0.0, 0.6, 1.0],
-    [0.0, 0.8, 1.0],
-    [0.2, 0.9, 0.8],
-    [0.4, 1.0, 0.6],
-    [0.6, 1.0, 0.4],
-    [0.8, 1.0, 0.2],
-    [1.0, 1.0, 0.0],
-    [1.0, 0.9, 0.0],
-    [1.0, 0.8, 0.0],
-    [1.0, 0.6, 0.0],
-    [1.0, 0.4, 0.0],
-    [1.0, 0.2, 0.0],
-    [0.9, 0.0, 0.0],
-    [0.7, 0.0, 0.0],
-    [0.5, 0.0, 0.0],
-    [0.3, 0.0, 0.0],
-    [0.1, 0.5, 0.0],
+    [0.0, 0.0, 0.5, 0.0],
+    [0.0, 0.5, 0.0, 0.0],
+    [0.8, 0.4, 0.9, 0.0],
+    [0.0, 0.6, 1.0, 0.0],
+    [0.0, 0.8, 1.0, 0.0],
+    [0.2, 0.9, 0.8, 0.0],
+    [0.4, 1.0, 0.6, 0.0],
+    [0.6, 1.0, 0.4, 0.0],
+    [0.8, 1.0, 0.2, 0.0],
+    [1.0, 1.0, 0.0, 0.0],
+    [1.0, 0.9, 0.0, 0.0],
+    [1.0, 0.8, 0.0, 0.0],
+    [1.0, 0.6, 0.0, 0.0],
+    [1.0, 0.4, 0.0, 0.0],
+    [1.0, 0.2, 0.0, 0.0],
+    [0.9, 0.0, 0.0, 0.0],
+    [0.7, 0.0, 0.0, 0.0],
+    [0.5, 0.0, 0.0, 0.0],
+    [0.3, 0.0, 0.0, 0.0],
+    [0.1, 0.0, 0.0, 0.0],
   ];
 
   hsv_colors = hsv_colors.flat();
   colorMapBuffer = device.createBuffer({
-    size: hsv_colors.length * 3 * 4,
+    size: hsv_colors.length * 4 * 4,
     usage: GPUBufferUsage.UNIFORM,
     mappedAtCreation: true,
   });
@@ -342,37 +367,7 @@ function initUniform(cam, projMatrix, params) {
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-  var controller = new Controller();
-
-  controller.mousemove = function (prev, cur, evt) {
-    if (evt.buttons == 1) {
-      // console.log("rotate");
-      camera.rotate(prev, cur);
-    } else if (evt.buttons == 2) {
-      camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
-    }
-  };
-  controller.wheel = function (amt) {
-    // console.log(amt);
-    camera.zoom(amt);
-  };
-  controller.pinch = controller.wheel;
-  controller.twoFingerDrag = function (drag) {
-    camera.pan(drag);
-  };
-  controller.registerForCanvas(canvas);
-  var canvasVisible = false;
-  var observer = new IntersectionObserver(
-    function (e) {
-      if (e[0].isIntersecting) {
-        canvasVisible = true;
-      } else {
-        canvasVisible = false;
-      }
-    },
-    { threshold: [0] }
-  );
-  observer.observe(canvas);
+  
   projView = mat4.mul(projView, proj, camera.camera);
   return projView;
 }

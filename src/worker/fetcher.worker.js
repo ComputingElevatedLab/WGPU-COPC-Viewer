@@ -26,6 +26,9 @@ const filename = process.env.filename;
 const readPoints = (id, getters) => {
   let returnPoint = getXyzi(id, getters);
   // console.log(returnPoint)
+  // if(returnPoint[3]<0.01){
+  //     returnPoint[3] = 0.5
+  // }
   if (returnPoint[2] > maxZ) {
     maxZ = returnPoint[2];
   }
