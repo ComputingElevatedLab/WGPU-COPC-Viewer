@@ -284,7 +284,7 @@ const syncThread = async () => {
 async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
-  console.log("asked for", keyMap);
+  // console.log("asked for", keyMap);
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
@@ -338,7 +338,7 @@ async function filterkeyCountMap(keyMap) {
     }
   }
   const endTime2 = performance.now();
-  console.log(`Time taken: ${endTime2 - startTime2}ms`);
+  console.log(`Time taken for LRU cache: ${endTime2 - startTime2}ms`);
 
   const startTime3 = performance.now();
   let filteredElements = [];
@@ -368,9 +368,9 @@ async function filterkeyCountMap(keyMap) {
     }
   }
   const endTime3 = performance.now();
-  console.log(`Time taken: ${endTime3 - startTime3}ms`);
+  console.log(`Time taken for persistance cache: ${endTime3 - startTime3}ms`);
 
-  await throttled_Update_Pers_Cache(mapIntoJSON(cache));
+  await throttled_Update_Pers_Cache(mapIntoJSON(pers_cache));
   //-------------------------------------------------------------------------
 
   for (let key in toDeleteArray) {
@@ -380,13 +380,13 @@ async function filterkeyCountMap(keyMap) {
     };
   }
   bufferMap = newBufferMap;
-  // console.log(`to fetch this ${filteredElements}`);
+  console.log(`to fetch this ${filteredElements}`);
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
 
 async function retrivePoints(projectionViewMatrix, newCamera) {
-  if(newCamera != undefined) camera = newCamera
+  if (newCamera != undefined) camera = newCamera;
   const startTime4 = performance.now();
   let keyCountMap = traverseTreeWrapper(
     nodePages,
@@ -424,29 +424,29 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
 }
 
 async function createCameraProj() {
-
   camera = new THREE.PerspectiveCamera(
     90,
     canvas.width / canvas.height,
     0.1,
     20000
   );
-  camera.position.set(0, 0, 500);
+  camera.position.set(0, 0, 1000);
+  camera.up.set(0, 0, 1);
   camera.updateProjectionMatrix();
-  // camera.lookAt(new THREE.Vector3(0, 0, 0));
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.5;
   // controls.minAzimuthAngle = 0;
   // controls.maxAzimuthAngle = 0.25 * Math.PI;
-  controls.minPolarAngle = 0;
-  controls.maxPolarAngle = Math.PI;
+  // controls.minPolarAngle = 0;
+  // controls.maxPolarAngle = Math.PI;
   controls.rotateSpeed = 2;
   controls.zoomSpeed = 2;
   controls.panSpeed = 5;
   // controls.autoRotate = true;
-  // controls.autoRotateSpeed = 1;
+  controls.autoRotateSpeed = 0.5;
   controls.update();
 
   // camera = new ArcballCamera([100, -100, 100], [0, 0, 0], [0, 1, 0], 300, [
@@ -481,10 +481,8 @@ async function loadCOPC() {
   widthz = Math.abs(z_max - z_min);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  // widthz = 50;
-  
-  console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube)
-
+  widthz = 150;
+  console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
@@ -501,7 +499,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  // await clear()
+  // await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();

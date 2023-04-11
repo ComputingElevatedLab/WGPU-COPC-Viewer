@@ -40,8 +40,9 @@ let paramsBuffer;
 let currentAxis = 2;
 let param;
 const stats = Stats();
-let controller
+let controller;
 document.body.appendChild(stats.dom);
+let counter = 0;
 
 function throttle(callback, interval) {
   let enableCall = true;
@@ -53,41 +54,31 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 1000);
+let throttleTreeTravel = throttle(retrivePoints, 3000);
 
 // ------------------------------- camera itenary
 
 const iternary = [
-  [ -30.4, 45.2, 1000],
-  [-30.4, 45.2, 385],
-  [ -200,-1180, -50 ],
-  [-100, -800, -50],
-  [ 0, 1150, -100 ],
+  // [-30.4, 45.2, 1000],
+  // [-30.4, 45.2, 385],
+  // [-200, -1180, -50],
+  // [-100, -800, -50],
+  {
+    position: [-317.5, -1922, 1894.75],
+    rotation: [0.7862, -0.0433, 0.0418],
+    target: [450.02, 208.66, -310],
+  },
+  {
+    position: [-632, -1184.73, 285],
+    rotation: [0.7216, -0.18, 0.15],
+    target: [-64.53, -331.32, -367],
+  },
+  {
+    position: [-147, -900, -300],
+    rotation: [0.1643, -0.04, 0.11],
+    target: [-120, -388, -523],
+  },
 ];
-
-
-// let counter = 0;
-// let testTimer = setInterval( function() { 
-// // make new camera
-// // camera = new ArcballCamera(iternary[4], [0, -200, 0], [0, 1, 0], 500, [
-// //   window.innerWidth,
-// //   window.innerHeight,
-// // ]);
-// // controller.wheel(300)
-// projView = mat4.mul(projView, proj, camera.camera);
-// // check projection matrix projView
-// throttleTreeTravel(projView, camera); 
-// camera.rotate([0, 0], [0, 100])
-// camera.updateCameraMatrix()
-// render()
-// counter++
-// if(counter == 20){
-//   clearInterval(testTimer)
-//   return;
-// }
-// }, 1000);
-
-
 
 function moveCamera() {
   return new Promise((resolve, reject) => {
@@ -204,13 +195,14 @@ async function init() {
 
   canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
-      let cameraPosition = camera.eyePos();
+      // let cameraPosition = camera.eyePos();
+      controls.update();
       throttleTreeTravel(projView);
     }
   });
 
   window.addEventListener("wheel", (event) => {
-    console.log(camera.eyePos());
+    // console.log(camera.eyePos());
     throttleTreeTravel(projView);
   });
 }
@@ -324,20 +316,26 @@ function initUniform(cam, projMatrix, params) {
   mapArray_params.set(params);
   paramsBuffer.unmap();
 
+  controls.addEventListener("change", () => {
+    console.log("camera position is ", controls.object.position);
+    console.log("camera rotation is ", controls.object.rotation);
+    console.log("camera target is ", controls.target);
+  });
+
   function get1DArray(arr) {
     return +arr.join().split(",");
   }
   // create colormap
   let hsv_colors = [
-    [0.0, 0.0, 0.5, 0.0],
-    [0.0, 0.5, 0.0, 0.0],
-    [0.8, 0.4, 0.9, 0.0],
+    [0.0, 0.0, 1.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0],
+    [1.0, 0.0, 1.0, 0.0],
     [0.0, 0.6, 1.0, 0.0],
     [0.0, 0.8, 1.0, 0.0],
     [0.2, 0.9, 0.8, 0.0],
-    [0.4, 1.0, 0.6, 0.0],
-    [0.6, 1.0, 0.4, 0.0],
-    [0.8, 1.0, 0.2, 0.0],
+    [0.1, 1.0, 0.6, 0.0],
+    [0.1, 1.0, 0.4, 0.0],
+    [0.8, 1.0, 0.1, 0.0],
     [1.0, 1.0, 0.0, 0.0],
     [1.0, 0.9, 0.0, 0.0],
     [1.0, 0.8, 0.0, 0.0],
@@ -367,8 +365,8 @@ function initUniform(cam, projMatrix, params) {
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-  
-  projView = mat4.mul(projView, proj, camera.camera);
+  let viewMatrix = camera.matrixWorldInverse.elements;
+  projView = mat4.mul(projView, proj, viewMatrix);
   return projView;
 }
 
@@ -412,7 +410,7 @@ async function encodedCommand() {
 
   let colorAttachment = {
     view: context.getCurrentTexture().createView(),
-    clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+    clearValue: { r: 0.3, g: 0.5, b: 0.8, a: 1.0 },
     loadOp: "clear",
     storeOp: "store",
   };
@@ -438,7 +436,6 @@ async function update(timestamp) {
     // update worldViewProj
     let proj = mat4.create();
     let view = mat4.create();
-
     {
       // proj
       const aspect = Math.abs(canvas.width / canvas.height);
@@ -472,6 +469,33 @@ async function stages(camera, proj, params) {
 // ---------------------------------------------------------------------------
 // i guess i am not using this
 
+async function moveFunction() {
+  camera.position.set(...iternary[counter].position);
+  camera.rotation.set(...iternary[counter].rotation);
+  camera.updateProjectionMatrix();
+  controls.target.set(...iternary[counter].target);
+  controls.update();
+  // controls.setAzimuthalAngle(10);
+  // controls.update();
+  await retrivePoints(projView, controls);
+  console.log("---------------------- I am called --------------");
+  render();
+}
+
+async function moveOnInterval() {
+  while (counter < iternary.length - 1) {
+    await moveFunction();
+    counter++;
+    if (counter == iternary.length) {
+      camera.position.set(...iternary[0].position);
+      camera.rotation.set(...iternary[0].rotation);
+      camera.updateProjectionMatrix();
+      controls.target.set(...iternary[0].target);
+      controls.update();
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
 async function renderStages(position, color) {
   console.log(" i am insider another render");
   numPoints = position.length / 3;
@@ -488,6 +512,15 @@ async function renderWrapper() {
   await createDepthBuffer();
   await updateMaxIntensity();
   render();
+  await retrivePoints(projView, controls);
+  render();
+  // camera.position.set(...iternary[0].position);
+  // camera.rotation.set(...iternary[0].rotation);
+  camera.updateProjectionMatrix();
+  // controls.target.set(...iternary[0].target);
+  controls.update();
+  await moveOnInterval();
+
   // itenaryStart(moveCamera);
 }
 
@@ -496,7 +529,8 @@ function render(timestamp) {
   var startTime = performance.now();
   commandEncoder = device.createCommandEncoder();
   //  this is not helpful for tree traversal so model matrix rotation is removed for now
-  projView = mat4.mul(projView, proj, camera.camera);
+  let viewMatrix = camera.matrixWorldInverse.elements;
+  projView = mat4.mul(projView, proj, viewMatrix);
   // update(timestamp);
   encodedCommand();
 
@@ -522,6 +556,7 @@ function render(timestamp) {
     numPoints = +bufferMap[key].position.label / 3;
     renderPass.draw(4, numPoints, 0, 0);
   }
+  controls.update();
   renderPass.end();
   device.queue.submit([commandEncoder.finish()]);
   var endTime = performance.now();

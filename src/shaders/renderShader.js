@@ -44,13 +44,13 @@ let vs = `
         var radius:f32 = 1.0;
         var position:vec3<f32> = in.position - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z);
         if(params.current_Axis == 2.0){
-            cMapIndex = i32(1.25*(abs(in.position.z - params.z_min)/params.width_z) *19);
+            cMapIndex = i32((abs(in.position.z - params.z_min)/params.width_z) *19);
         }
         else if(params.current_Axis == 1.0){
-            cMapIndex = i32(1.25*(abs(in.position.y - params.y_min)/params.width_y) *19);
+            cMapIndex = i32((abs(in.position.y - params.y_min)/params.width_y) *19);
         }
         else {
-            cMapIndex = i32(1.25*(abs(in.position.x - params.x_min)/params.width_x) *19);
+            cMapIndex = i32((abs(in.position.x - params.x_min)/params.width_x) *19);
         }
 
         if(cMapIndex>19){
@@ -59,16 +59,16 @@ let vs = `
 
        
         let cmapped = cMap.colors[cMapIndex];
-        var factor = in.color.x/(32767.0);
-        out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0)*factor;
-        if(in.color.x <0.01){
-            // out.color = vec4(1.0, 0.0, 0.0, 0.5);  
-            factor = 0.5; 
-        }
+        var factor = 1.5*in.color.x/3276;
         if(factor > 1.0){
-            factor = 0.85;
-            out.color = vec4(0.0, 1.0, 0.0, 1.0)*factor;
+            factor = 1.0;
         }
+        out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0)*factor;
+        
+        if(in.color.x <0.01){
+            out.color = vec4(1.0, 0.0, 0.0, 1.0);  
+        }
+        
 
        
         position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);

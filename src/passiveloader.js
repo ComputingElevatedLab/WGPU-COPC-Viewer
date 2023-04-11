@@ -47,7 +47,7 @@ let canvas = document.getElementById("screen-canvas");
 canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
 canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
 let screenWidth = canvas.width;
-console.log(screenWidth)
+console.log(screenWidth);
 let screenHeight = canvas.height;
 let fovRADIAN = Math.PI / 2;
 
@@ -60,13 +60,13 @@ function isRendered(center, radius, distance, projViewMatrix, key, width) {
   //   return false;
   // }
 
-  let pixel_size = 2 * Math.tan(fovRADIAN / 2.0) * distance / screenHeight;
+  let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
 
   // console.log(pixel_size, projectedRadius)
-  
-  return Math.abs(projectedRadius) > 50;
+
+  return Math.abs(projectedRadius) > 45;
 }
 
 function traverseTreeWrapper(
@@ -81,9 +81,9 @@ function traverseTreeWrapper(
   projViewMatrix
 ) {
   let cameraPosition = controls.object.position.toArray();
-  console.log(cameraPosition);
-  let width_x_world = width[0]
-  console.log(width)
+  // console.log(cameraPosition);
+  let width_x_world = width[0];
+  // console.log(width);
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
     let newLevel = level + 1;

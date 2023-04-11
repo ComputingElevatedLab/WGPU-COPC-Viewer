@@ -9,6 +9,7 @@ function sortObjectIntoMap(object1) {
 }
 
 function mapIntoJSON(map) {
+  console.log("map to json is", Object.fromEntries(map));
   return JSON.stringify(Object.fromEntries(map));
 }
 
@@ -29,6 +30,9 @@ const get_inCache = (cache, key) => {
 const put_inCache = (cache, key, value) => {
   cache.delete(key);
   if (cache.size == process.env.p_cache_capacity) {
+    let fileName = cache.keys().next().value
+    // delete fileName
+    
     cache.delete(cache.keys().next().value);
   } else {
     cache.set(key, value);
