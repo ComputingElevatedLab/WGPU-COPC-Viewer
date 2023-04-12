@@ -658,7 +658,7 @@ async function loadCOPC() {
   widthz = Math.abs(z_max - z_min);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  widthz = 150;
+  // widthz = 150;
   console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
@@ -707,7 +707,7 @@ async function loadCOPC() {
   // console.log("data loading start");
 
   // const start11 = performance.now();
-  // await retrivePoints(projViewMatrix);
+  await retrivePoints(projViewMatrix);
   // const end11 = performance.now();
   // console.log(
   //   `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`

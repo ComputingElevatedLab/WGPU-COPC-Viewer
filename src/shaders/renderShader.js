@@ -59,17 +59,15 @@ let vs = `
 
        
         let cmapped = cMap.colors[cMapIndex];
-        var factor = 1.5*in.color.x/3276;
+        var factor = in.color.x/65535;
         if(factor > 1.0){
             factor = 1.0;
         }
         out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0)*factor;
         
         if(in.color.x <0.01){
-            out.color = vec4(1.0, 0.0, 0.0, 1.0);  
+            out.color = vec4(1.0, 0.0, 0.0, 0.6);  
         }
-        
-
        
         position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);
         position.z = 1.5*position.z;

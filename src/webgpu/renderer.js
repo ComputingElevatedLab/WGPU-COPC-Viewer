@@ -343,9 +343,9 @@ function initUniform(cam, projMatrix, params) {
   paramsBuffer.unmap();
 
   controls.addEventListener("change", () => {
-    // console.log("camera position is ", controls.object.position);
-    // console.log("camera rotation is ", controls.object.rotation);
-    // console.log("camera target is ", controls.target);
+    console.log("camera position is ", controls.object.position);
+    console.log("camera rotation is ", controls.object.rotation);
+    console.log("camera target is ", controls.target);
   });
 
   function get1DArray(arr) {
@@ -549,7 +549,7 @@ async function renderWrapper() {
   camera.updateProjectionMatrix();
   // controls.target.set(...iternary[0].target);
   controls.update();
-  await moveOnInterval();
+  // await moveOnInterval();
 
   // itenaryStart(moveCamera);
 }
