@@ -37,10 +37,10 @@ let updatePersCache = async (updatD_data) => {
   const writableStream = await fileHandle.createWritable();
   await writableStream.write(updatD_data);
   await writableStream.close();
-  console.log("cache updating is done");
+  // console.log("cache updating is done");
 };
 
-let throttled_Update_Pers_Cache = throttle(updatePersCache, 30000);
+let throttled_Update_Pers_Cache = throttle(updatePersCache, 5000);
 
 // let update_cache = async (method, data) => {
 //   const cache_name = "cache-holder";
@@ -64,7 +64,7 @@ let clear = async () => {
   const fileNames = await root.keys();
   let x = await fileNames.next();
   while (!x.done) {
-    console.log("hello")
+    console.log("hello");
     let fileName = x.value;
     const fileHandle = await root.getFileHandle(fileName);
     await fileHandle.remove();
@@ -123,7 +123,7 @@ let doesExist = async (fileName) => {
     const permissionStatus = await fileHandle.queryPermission();
     let found = permissionStatus == "granted" ? true : false;
     let retrived_blob = await fileHandle.getFile();
-    if(retrived_blob.size>0){
+    if (retrived_blob.size > 0) {
       var reader = new FileReader();
       return await new Promise((resolve, reject) => {
         reader.onload = function () {
@@ -131,14 +131,11 @@ let doesExist = async (fileName) => {
         };
         reader.readAsText(retrived_blob);
       });
-       
+    } else {
+      return [true, { position: [], color: [] }];
     }
-    else{
-      return [ true, {position:[], color: []}]
-    } 
   } catch (error) {
     if (error.name === "NotFoundError") {
-      console.log("file not found");
       return [false, null];
     } else {
       console.error("Error checking if file exists:", error);

@@ -254,6 +254,9 @@ const createBuffer = (positions, colors) => {
   return [positionBuffer, colorBuffer];
 };
 
+let total = 0;
+let total2 = 0;
+
 const syncThread = async () => {
   await Promise.all(promises).then(async (response) => {
     for (let i = 0, _length = response.length; i < _length; i++) {
@@ -263,8 +266,13 @@ const syncThread = async () => {
         position: data[0],
         color: data[1],
       };
+      const start = performance.now();
       let data_json_stringify = JSON.stringify(data_json);
+      cache.set(fileName, data_json_stringify);
+      const end = performance.now();
+      total += end - start;
       await write(`${source_file_name}-${fileName}`, data_json_stringify);
+
       state_meta[fileName] = {
         count: 1,
         date: new Date(),
@@ -279,12 +287,22 @@ const syncThread = async () => {
     // console.log(bufferMap);
     // console.log("one chunk finish");
   });
+  const start = performance.now();
+  await throttled_Update_Pers_Cache(mapIntoJSON(pers_cache));
+  const end = performance.now();
+  console.log(`Total Time to write into meta cache: ${end - start}ms`);
 };
 
-async function filterkeyCountMap(keyMap) {
+async function filterkeyCountMap_NOthing(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
-  // console.log("asked for", keyMap);
+  let total = 0;
+  for (let i = 1; i < keyMap.length; i += 2) {
+    total += keyMap[i];
+  }
+
+  console.log("total point to be loaded is", total);
+
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
@@ -292,6 +310,8 @@ async function filterkeyCountMap(keyMap) {
   }
 
   let existingBuffers = Object.keys(bufferMap);
+  // console.log("at the start of filtering", existingBuffers.length);
+
   let toDeleteArray = existingBuffers.reduce((acc, val) => {
     acc[val] = true;
     return acc;
@@ -307,12 +327,63 @@ async function filterkeyCountMap(keyMap) {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
       };
-      pers_cache = get_inCache(pers_cache, keyMap[i]);
+      pers_cache = await get_inCache(pers_cache, keyMap[i]);
+      delete toDeleteArray[keyMap[i]];
+    }
+  }
+  //-------------------------------------------------------------------------
+  existingBuffers = Object.keys(newBufferMap);
+  for (let key in toDeleteArray) {
+    toDeleteMap[key] = {
+      position: bufferMap[key].position,
+      color: bufferMap[key].position,
+    };
+  }
+  bufferMap = newBufferMap;
+  return newKeyMap;
+}
+
+async function filterkeyCountMap_LRU(keyMap) {
+  let newKeyMap = [];
+  let newBufferMap = {};
+  let total = 0;
+  for (let i = 1; i < keyMap.length; i += 2) {
+    total += keyMap[i];
+  }
+
+  console.log("total point to be loaded is", total);
+
+  // console.log("asked for", keyMap);
+  for (const key in toDeleteMap) {
+    toDeleteMap[key].position.destroy();
+    toDeleteMap[key].color.destroy();
+    delete toDeleteMap[key];
+  }
+
+  let existingBuffers = Object.keys(bufferMap);
+  // console.log("at the start of filtering", existingBuffers.length);
+
+  let toDeleteArray = existingBuffers.reduce((acc, val) => {
+    acc[val] = true;
+    return acc;
+  }, {});
+
+  const startTime1 = performance.now();
+  for (let i = 0; i < keyMap.length; i += 2) {
+    if (!(keyMap[i] in bufferMap)) {
+      newKeyMap.push(keyMap[i], keyMap[i + 1]);
+    } else {
+      // console.log(`found ${keyMap[i]} in existing buffer`);
+      newBufferMap[keyMap[i]] = {
+        position: bufferMap[keyMap[i]].position,
+        color: bufferMap[keyMap[i]].color,
+      };
+      pers_cache = await get_inCache(pers_cache, keyMap[i]);
       delete toDeleteArray[keyMap[i]];
     }
   }
   const endTime1 = performance.now();
-  console.log(`Time taken: ${endTime1 - startTime1}ms`);
+  // console.log(`Time taken to find new one needed: ${endTime1 - startTime1}ms`);
 
   // --------------------- these are new ones
   // are they in cache?
@@ -321,10 +392,96 @@ async function filterkeyCountMap(keyMap) {
   let afterCheckingCache = [];
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let cachedResult = cache.get(newKeyMap[i]);
+
     if (cachedResult) {
       // console.log(`found ${newKeyMap[i]} in cache`);
       cachedResult = JSON.parse(cachedResult);
-      pers_cache = get_inCache(pers_cache, newKeyMap[i]);
+      // pers_cache = await get_inCache(pers_cache, newKeyMap[i]);
+      let [positionBuffer, colorBuffer] = createBuffer(
+        cachedResult.position,
+        cachedResult.color
+      );
+      newBufferMap[newKeyMap[i]] = {
+        position: positionBuffer,
+        color: colorBuffer,
+      };
+    } else {
+      afterCheckingCache.push(newKeyMap[i], newKeyMap[i + 1]);
+    }
+  }
+  // console.log(
+  //   `Time taken for retival from persistance cache: ${endTime3 - startTime3}ms`
+  // );
+  //-------------------------------------------------------------------------
+  existingBuffers = Object.keys(newBufferMap);
+  // console.log("after filtering", existingBuffers.length);
+
+  // console.log("to delete array", toDeleteArray);
+  for (let key in toDeleteArray) {
+    toDeleteMap[key] = {
+      position: bufferMap[key].position,
+      color: bufferMap[key].position,
+    };
+  }
+  bufferMap = newBufferMap;
+  return afterCheckingCache;
+  //filter and delete unwanted bufferMap
+}
+
+async function filterkeyCountMap(keyMap) {
+  let newKeyMap = [];
+  let newBufferMap = {};
+  let total = 0;
+  for (let i = 1; i < keyMap.length; i += 2) {
+    total += keyMap[i];
+  }
+
+  console.log("total point to be loaded is", total);
+
+  // console.log("asked for", keyMap);
+  for (const key in toDeleteMap) {
+    toDeleteMap[key].position.destroy();
+    toDeleteMap[key].color.destroy();
+    delete toDeleteMap[key];
+  }
+
+  let existingBuffers = Object.keys(bufferMap);
+  // console.log("at the start of filtering", existingBuffers.length);
+
+  let toDeleteArray = existingBuffers.reduce((acc, val) => {
+    acc[val] = true;
+    return acc;
+  }, {});
+
+  const startTime1 = performance.now();
+  for (let i = 0; i < keyMap.length; i += 2) {
+    if (!(keyMap[i] in bufferMap)) {
+      newKeyMap.push(keyMap[i], keyMap[i + 1]);
+    } else {
+      // console.log(`found ${keyMap[i]} in existing buffer`);
+      newBufferMap[keyMap[i]] = {
+        position: bufferMap[keyMap[i]].position,
+        color: bufferMap[keyMap[i]].color,
+      };
+      pers_cache = await get_inCache(pers_cache, keyMap[i]);
+      delete toDeleteArray[keyMap[i]];
+    }
+  }
+  const endTime1 = performance.now();
+  // console.log(`Time taken to find new one needed: ${endTime1 - startTime1}ms`);
+
+  // --------------------- these are new ones
+  // are they in cache?
+  const startTime2 = performance.now();
+
+  let afterCheckingCache = [];
+  for (let i = 0; i < newKeyMap.length; i += 2) {
+    let cachedResult = cache.get(newKeyMap[i]);
+
+    if (cachedResult) {
+      // console.log(`found ${newKeyMap[i]} in cache`);
+      cachedResult = JSON.parse(cachedResult);
+      // pers_cache = await get_inCache(pers_cache, newKeyMap[i]);
       let [positionBuffer, colorBuffer] = createBuffer(
         cachedResult.position,
         cachedResult.color
@@ -338,7 +495,6 @@ async function filterkeyCountMap(keyMap) {
     }
   }
   const endTime2 = performance.now();
-  console.log(`Time taken for LRU cache: ${endTime2 - startTime2}ms`);
 
   const startTime3 = performance.now();
   let filteredElements = [];
@@ -346,6 +502,7 @@ async function filterkeyCountMap(keyMap) {
     let [Exist, data] = await doesExist(
       `${source_file_name}-${afterCheckingCache[i]}`
     );
+
     if (Exist) {
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
@@ -353,26 +510,30 @@ async function filterkeyCountMap(keyMap) {
         data.position,
         data.color
       );
+
       newBufferMap[afterCheckingCache[i]] = {
         position: positionBuffer,
         color: colorBuffer,
       };
       cache.set(afterCheckingCache[i], JSON.stringify(data));
-      pers_cache = get_inCache(pers_cache, afterCheckingCache[i]);
+      pers_cache = await get_inCache(pers_cache, afterCheckingCache[i]);
     } else {
       filteredElements.push(afterCheckingCache[i], afterCheckingCache[i + 1]);
-      pers_cache = put_inCache(pers_cache, afterCheckingCache[i], {
+      pers_cache = await put_inCache(pers_cache, afterCheckingCache[i], {
         count: 1,
         date: Date.now(),
       });
     }
   }
   const endTime3 = performance.now();
-  console.log(`Time taken for persistance cache: ${endTime3 - startTime3}ms`);
-
-  await throttled_Update_Pers_Cache(mapIntoJSON(pers_cache));
+  // console.log(
+  //   `Time taken for retival from persistance cache: ${endTime3 - startTime3}ms`
+  // );
   //-------------------------------------------------------------------------
+  existingBuffers = Object.keys(newBufferMap);
+  // console.log("after filtering", existingBuffers.length);
 
+  // console.log("to delete array", toDeleteArray);
   for (let key in toDeleteArray) {
     toDeleteMap[key] = {
       position: bufferMap[key].position,
@@ -380,12 +541,12 @@ async function filterkeyCountMap(keyMap) {
     };
   }
   bufferMap = newBufferMap;
-  console.log(`to fetch this ${filteredElements}`);
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
 
 async function retrivePoints(projectionViewMatrix, newCamera) {
+  total = 0;
   if (newCamera != undefined) camera = newCamera;
   const startTime4 = performance.now();
   let keyCountMap = traverseTreeWrapper(
@@ -400,12 +561,18 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
     projectionViewMatrix
   );
   const endTime4 = performance.now();
-  console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
-
-  keyCountMap = await filterkeyCountMap(keyCountMap);
+  // console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
+  // keyCountMap = await filterkeyCountMap_LRU(keyCountMap);
+  keyCountMap = await filterkeyCountMap_NOthing(keyCountMap);
+  // keyCountMap = await filterkeyCountMap(keyCountMap);
   clock.getDelta();
+  const start_retrival = performance.now();
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
+
+  let existingBuffers = Object.keys(bufferMap);
+  // console.log("before fetching", existingBuffers.length);
+
   for (let m = 0; m < keyCountMap.length; ) {
     let remaining = totalNodes - doneCount;
     let numbWorker = Math.min(MAX_WORKERS, remaining);
@@ -420,7 +587,17 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
       }
     }
   }
-  console.log("it finished at", clock.getDelta());
+
+  existingBuffers = Object.keys(bufferMap);
+  // console.log("after fetching", existingBuffers.length);
+
+  const end_retival = performance.now();
+  // console.log(
+  //   `Time to retrive/fetch needed is : ${
+  //     end_retival - start_retrival
+  //   }ms, and ${total} is consumed in cache in between`
+  // );
+  // console.log("it finished at", clock.getDelta());
 }
 
 async function createCameraProj() {
@@ -430,7 +607,7 @@ async function createCameraProj() {
     0.1,
     20000
   );
-  camera.position.set(0, 0, 1000);
+  camera.position.set(0, 0, 1500);
   camera.up.set(0, 0, 1);
   camera.updateProjectionMatrix();
   camera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -499,7 +676,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  // await clear();
+  await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();
@@ -529,12 +706,12 @@ async function loadCOPC() {
   console.log(`Time taken to do initial rendering setup: ${end10 - start10}ms`);
   // console.log("data loading start");
 
-  const start11 = performance.now();
-  await retrivePoints(projViewMatrix);
-  const end11 = performance.now();
-  console.log(
-    `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`
-  );
+  // const start11 = performance.now();
+  // await retrivePoints(projViewMatrix);
+  // const end11 = performance.now();
+  // console.log(
+  //   `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`
+  // );
   // console.log("data loaded");
 
   const start12 = performance.now();

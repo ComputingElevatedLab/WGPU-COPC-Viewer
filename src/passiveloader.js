@@ -66,7 +66,7 @@ function isRendered(center, radius, distance, projViewMatrix, key, width) {
 
   // console.log(pixel_size, projectedRadius)
 
-  return Math.abs(projectedRadius) > 45;
+  return Math.abs(projectedRadius) > 80;
 }
 
 function traverseTreeWrapper(

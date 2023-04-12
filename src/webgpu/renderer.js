@@ -64,6 +64,22 @@ const iternary = [
   // [-200, -1180, -50],
   // [-100, -800, -50],
   {
+    position: [-1173, 447, 455],
+    rotation: [0.36, -0.71, -2.0],
+    target: [69.4, -57.989, -879.764],
+  },
+  {
+    position: [-1172.67, -1079.21, 232],
+    rotation: [0.829, -0.76, -0.5617],
+    target: [138, -72.182, -699.85],
+  },
+
+  {
+    position: [-99.4, -280.4, 1923.32],
+    rotation: [6.84, -7.29, 0.817],
+    target: [-99.4, -280, -418],
+  },
+  {
     position: [-317.5, -1922, 1894.75],
     rotation: [0.7862, -0.0433, 0.0418],
     target: [450.02, 208.66, -310],
@@ -74,9 +90,19 @@ const iternary = [
     target: [-64.53, -331.32, -367],
   },
   {
-    position: [-147, -900, -300],
-    rotation: [0.1643, -0.04, 0.11],
-    target: [-120, -388, -523],
+    position: [-22.63, -1385.14, 474],
+    rotation: [1.039, 0.013722, 0.008],
+    target: [-46.073, -86.79, -389.69],
+  },
+  {
+    position: [1229, -1019.31, 450.9],
+    rotation: [0.466, 0.66604, 0.883],
+    target: [68.77, -347.65, -884],
+  },
+  {
+    position: [1197.2, 630.5, 333.4],
+    rotation: [-0.737, 0.45, 2.69],
+    target: [368, -513, -925],
   },
 ];
 
@@ -317,9 +343,9 @@ function initUniform(cam, projMatrix, params) {
   paramsBuffer.unmap();
 
   controls.addEventListener("change", () => {
-    console.log("camera position is ", controls.object.position);
-    console.log("camera rotation is ", controls.object.rotation);
-    console.log("camera target is ", controls.target);
+    // console.log("camera position is ", controls.object.position);
+    // console.log("camera rotation is ", controls.object.rotation);
+    // console.log("camera target is ", controls.target);
   });
 
   function get1DArray(arr) {
@@ -477,15 +503,20 @@ async function moveFunction() {
   controls.update();
   // controls.setAzimuthalAngle(10);
   // controls.update();
+  console.log("--------------- for step--------------", counter);
+  const start = performance.now();
   await retrivePoints(projView, controls);
+  const end = performance.now();
+  console.log(`Total retrive Time: ${end - start}ms`);
   console.log("---------------------- I am called --------------");
   render();
 }
 
 async function moveOnInterval() {
-  while (counter < iternary.length - 1) {
+  while (counter < iternary.length) {
     await moveFunction();
     counter++;
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     if (counter == iternary.length) {
       camera.position.set(...iternary[0].position);
       camera.rotation.set(...iternary[0].rotation);
@@ -493,7 +524,6 @@ async function moveOnInterval() {
       controls.target.set(...iternary[0].target);
       controls.update();
     }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 async function renderStages(position, color) {
@@ -512,7 +542,7 @@ async function renderWrapper() {
   await createDepthBuffer();
   await updateMaxIntensity();
   render();
-  await retrivePoints(projView, controls);
+  // await retrivePoints(projView, controls);
   render();
   // camera.position.set(...iternary[0].position);
   // camera.rotation.set(...iternary[0].rotation);

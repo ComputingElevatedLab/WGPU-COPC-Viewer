@@ -1,5 +1,7 @@
 import { doesExist } from "./file_manager";
 
+const source_file_name = process.env.filename.split("/").pop();
+
 function sortObjectIntoMap(object1) {
   let resultMap = new Map();
   if (!object1) return resultMap;
@@ -9,7 +11,7 @@ function sortObjectIntoMap(object1) {
 }
 
 function mapIntoJSON(map) {
-  console.log("map to json is", Object.fromEntries(map));
+  // console.log("map to json is", Object.fromEntries(map));
   return JSON.stringify(Object.fromEntries(map));
 }
 
@@ -19,7 +21,7 @@ const p_cache = async (capacity) => {
   return cache;
 };
 
-const get_inCache = (cache, key) => {
+const get_inCache = async (cache, key) => {
   if (!cache.has(key)) return cache;
   let val = cache.get(key);
   cache.delete(key);
@@ -27,16 +29,21 @@ const get_inCache = (cache, key) => {
   return cache;
 };
 
-const put_inCache = (cache, key, value) => {
+const put_inCache = async (cache, key, value) => {
   cache.delete(key);
   if (cache.size == process.env.p_cache_capacity) {
-    let fileName = cache.keys().next().value
-    // delete fileName
-    
-    cache.delete(cache.keys().next().value);
-  } else {
-    cache.set(key, value);
+    let fileName = cache.keys().next().value;
+    let fileName1 = `${source_file_name}-${fileName}`;
+    let [Exist, data] = await doesExist(fileName1);
+    if (Exist) {
+      let fileToCheck = `${fileName1}.bin`;
+      const root = await navigator.storage.getDirectory();
+      const fileHandle2 = await root.getFileHandle(fileToCheck);
+      await fileHandle2.remove();
+      cache.delete(fileName);
+    }
   }
+  cache.set(key, value);
   return cache;
 };
 
