@@ -64,36 +64,22 @@ const iternary = [
   // [-200, -1180, -50],
   // [-100, -800, -50],
   {
-    position: [-86.304, -696.11, 153],
-    rotation: [0.6606, -0.046, -0.059],
-    target: [-66.069, -427.63, -192.11],
+    position: [-77.96, -369, -2262.4],
+    rotation: [0.692, -0.31, -0.35],
+    target: [380.58, 541.82, -3361.98],
   },
   {
-    position: [396.624, -494.87, -405],
-    rotation: [0.621, 0.5114, 0.595],
-    target: [292.08, -386.49, -557.345],
+    position: [2024.82, -3444.715, -2127.328],
+    rotation: [0.7258, 0.028, 0.0324],
+    target: [2019.272, -3316.814, -2271.446],
   },
 
   {
-    position: [430.317, -55.587, -449.8],
-    rotation: [-0.0135, 0.511, 1.598],
-    target: [325.781, -58.104, -636.096],
+    position: [3102.99, 759.046, -2131.18096],
+    rotation: [0.00829, 0.70459, 1.557],
+    target: [1480.26, 774.88, -4039],
   },
-  {
-    position: [13.56, 640.7, -600.75],
-    rotation: [-0.908, -0.15, -3.0199],
-    target: [75.514, 332.93, -840],
-  },
-  {
-    position: [-439.39, 546, -595],
-    rotation: [-0.37, -0.559, -2.2],
-    target: [-123, -361.32, -1065],
-  },
-  {
-    position: [-479.82, 22.63, -514.83],
-    rotation: [-0.0185, -0.511, -1.608],
-    target: [-121.92, 10.78, -1152.696],
-  },
+  // two after this is data from previous and filled only for making 8 elements
   {
     position: [-65.6, 5.375, -342.15],
     rotation: [2.708, -9.99, -1.54],
@@ -103,6 +89,22 @@ const iternary = [
     position: [-50.319, -159.89, -503.01],
     rotation: [0.36, -0.019, -0.05],
     target: [-37.7, 73.4, -1120],
+  },
+
+  {
+    position: [-997.27, 3390.685, -2573.307],
+    rotation: [-0.7154, 0.0056, -3.13504],
+    target: [-1013.074, 1569.8, -4668.52],
+  },
+  {
+    position: [-3188.65, 1151.085, -2415.9],
+    rotation: [-0.0092, -0.66121, -1.5859],
+    target: [-2511.52, 1143.011, -3286.162],
+  },
+  {
+    position: [-96.239, 277.5, 1505.2421],
+    rotation: [0.0108, 0.000235, -0.021679],
+    target: [-95.886, 234.78, 5.33],
   },
 ];
 
@@ -513,6 +515,7 @@ async function moveFunction() {
 }
 
 async function moveOnInterval() {
+  console.log(counter, iternary.length);
   while (counter < iternary.length) {
     await moveFunction();
     counter++;
@@ -525,6 +528,7 @@ async function moveOnInterval() {
       controls.update();
     }
   }
+  console.log(counter);
 }
 async function renderStages(position, color) {
   console.log(" i am insider another render");
@@ -543,15 +547,12 @@ async function renderWrapper() {
   await updateMaxIntensity();
   render();
   // await retrivePoints(projView, controls);
-  render();
   // camera.position.set(...iternary[0].position);
   // camera.rotation.set(...iternary[0].rotation);
   camera.updateProjectionMatrix();
   // controls.target.set(...iternary[0].target);
   controls.update();
   await moveOnInterval();
-
-  // itenaryStart(moveCamera);
 }
 
 function render(timestamp) {

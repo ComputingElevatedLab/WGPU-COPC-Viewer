@@ -565,9 +565,11 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
   // keyCountMap = await filterkeyCountMap_LRU(keyCountMap);
   // keyCountMap = await filterkeyCountMap_NOthing(keyCountMap);
   keyCountMap = await filterkeyCountMap(keyCountMap);
+  console.log(keyCountMap);
   clock.getDelta();
   const start_retrival = performance.now();
   let totalNodes = keyCountMap.length / 2;
+  console.log(totalNodes);
   let doneCount = 0;
 
   let existingBuffers = Object.keys(bufferMap);
@@ -582,8 +584,9 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
       doneCount++;
       m += 2;
       if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
+        console.log(doneCount, "before i am done");
         await syncThread();
-        // console.log(doneCount, "i am done");
+        console.log(doneCount, "i am done");
       }
     }
   }
@@ -597,6 +600,7 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
   //     end_retival - start_retrival
   //   }ms, and ${total} is consumed in cache in between`
   // );
+  console.log("retrive is done");
   // console.log("it finished at", clock.getDelta());
 }
 
@@ -605,7 +609,7 @@ async function createCameraProj() {
     90,
     canvas.width / canvas.height,
     0.1,
-    20000
+    80000
   );
   camera.position.set(0, 0, 1500);
   camera.up.set(0, 0, 1);
@@ -676,7 +680,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  await clear();
+  // await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();
