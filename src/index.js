@@ -563,8 +563,8 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
   const endTime4 = performance.now();
   // console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
   // keyCountMap = await filterkeyCountMap_LRU(keyCountMap);
-  keyCountMap = await filterkeyCountMap_NOthing(keyCountMap);
-  // keyCountMap = await filterkeyCountMap(keyCountMap);
+  // keyCountMap = await filterkeyCountMap_NOthing(keyCountMap);
+  keyCountMap = await filterkeyCountMap(keyCountMap);
   clock.getDelta();
   const start_retrival = performance.now();
   let totalNodes = keyCountMap.length / 2;
@@ -707,7 +707,7 @@ async function loadCOPC() {
   // console.log("data loading start");
 
   // const start11 = performance.now();
-  await retrivePoints(projViewMatrix);
+  // await retrivePoints(projViewMatrix);
   // const end11 = performance.now();
   // console.log(
   //   `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`
