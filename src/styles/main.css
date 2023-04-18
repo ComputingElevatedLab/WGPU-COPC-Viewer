@@ -46,3 +46,16 @@ select {
 option {
   text-indent: 15px;
 }
+
+.abort-div {
+  position: absolute;
+  top: 50px;
+  left: 10px;
+  padding: 20px 30px;
+  border: 2px solid;
+}
+
+#abort_btn {
+  background: none;
+  font-size: 14px;
+}

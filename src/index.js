@@ -385,7 +385,7 @@ async function filterkeyCountMap(keyMap) {
   //filter and delete unwanted bufferMap
 }
 
-async function retrivePoints(projectionViewMatrix) {
+async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
   const startTime4 = performance.now();
   let keyCountMap = traverseTreeWrapper(
     nodePages,
@@ -415,6 +415,10 @@ async function retrivePoints(projectionViewMatrix) {
       m += 2;
       if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
         await syncThread();
+        if (controllerSignal && controllerSignal.aborted) {
+          console.log("i am aborted now");
+          return;
+        }
         // console.log(doneCount, "i am done");
       }
     }
@@ -456,9 +460,8 @@ async function loadCOPC() {
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
   // widthz = 50;
-  
-  console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube)
 
+  console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];

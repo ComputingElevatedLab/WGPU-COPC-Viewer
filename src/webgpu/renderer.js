@@ -39,6 +39,8 @@ let colorMapBuffer;
 let paramsBuffer;
 let currentAxis = 2;
 let param;
+let abortController = null;
+
 const stats = Stats();
 document.body.appendChild(stats.dom);
 
@@ -186,7 +188,11 @@ async function init() {
 
   window.addEventListener("wheel", (event) => {
     console.log(camera.eyePos());
-    throttleTreeTravel(projView);
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+    throttleTreeTravel(projView, abortController.signal);
   });
 }
 
