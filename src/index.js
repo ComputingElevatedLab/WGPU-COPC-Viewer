@@ -607,7 +607,7 @@ async function createCameraProj() {
     0.1,
     20000
   );
-  camera.position.set(0, 0, 1500);
+  camera.position.set(0, 0, 2500);
   camera.up.set(0, 0, 1);
   camera.updateProjectionMatrix();
   camera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -658,7 +658,7 @@ async function loadCOPC() {
   widthz = Math.abs(z_max - z_min);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  // widthz = 150;
+  // widthz = 1500;
   console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
@@ -676,7 +676,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  await clear();
+  // await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();
