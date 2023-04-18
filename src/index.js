@@ -385,6 +385,51 @@ async function filterkeyCountMap(keyMap) {
   //filter and delete unwanted bufferMap
 }
 
+let direction = [
+  [0, 0, 0],
+  [0, 0, 1],
+  [0, 1, 0],
+  [0, 1, 1],
+  [1, 0, 0],
+  [1, 0, 1],
+  [1, 1, 0],
+  [1, 1, 1],
+];
+
+function findSiblings(keyCountMap) {
+  let siblings = {};
+  let nodeKeyCount = [];
+  for (let i = 0; i < keyCountMap.length; i += 2) {
+    let myNode = keyCountMap[i];
+    myNode = myNode.split("-").map(Number);
+    if (myNode.every((c) => c == 0)) {
+      continue;
+    }
+    let myParent = [];
+    myParent[0] = myNode[0] - 1;
+    for (let i = 1; i <= 3; i++) {
+      myParent[i] = Math.floor(myNode[i] / 2);
+    }
+
+    for (let k = 0; k < 8; k++) {
+      let sibling = [
+        myNode[0],
+        2 * myParent[1] + direction[k][0],
+        2 * myParent[2] + direction[k][1],
+        2 * myParent[3] + direction[k][2],
+      ];
+      sibling = sibling.join("-");
+      if (sibling in siblings || sibling in bufferMap) {
+        continue;
+      } else if (sibling in nodePages && nodePages[sibling].pointCount > 0) {
+        nodeKeyCount.push(sibling, nodePages[sibling].pointCount);
+        siblings[sibling] = true;
+      }
+    }
+  }
+  return nodeKeyCount;
+}
+
 async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
   const startTime4 = performance.now();
   let keyCountMap = traverseTreeWrapper(
@@ -424,6 +469,10 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
     }
   }
   console.log("it finished at", clock.getDelta());
+
+  // find sibling
+  let siblings = findSiblings(keyCountMap);
+  console.log(siblings);
 }
 
 async function createCameraProj() {
