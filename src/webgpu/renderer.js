@@ -54,7 +54,7 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 3000);
+let throttleTreeTravel = throttle(retrivePoints, 2000);
 
 // ------------------------------- camera itenary
 
@@ -187,7 +187,7 @@ async function init() {
   });
 
   window.addEventListener("wheel", (event) => {
-    console.log(camera.eyePos());
+    // console.log(camera.eyePos());
     if (abortController) {
       abortController.abort();
     }
@@ -358,6 +358,7 @@ function initUniform(cam, projMatrix, params) {
       camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
     }
   };
+
   controller.wheel = function (amt) {
     // console.log(amt);
     camera.zoom(amt);
@@ -379,6 +380,7 @@ function initUniform(cam, projMatrix, params) {
     { threshold: [0] }
   );
   observer.observe(canvas);
+
   projView = mat4.mul(projView, proj, camera.camera);
   return projView;
 }

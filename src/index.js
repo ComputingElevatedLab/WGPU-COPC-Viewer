@@ -35,7 +35,6 @@ import { fillArray, fillMidNodes } from "./helper";
 import { cache } from "./lru-cache/index";
 
 const bytes = new Float32Array(59);
-
 const source_file_name = process.env.filename.split("/").pop();
 let state_meta = {};
 
@@ -281,6 +280,56 @@ const syncThread = async () => {
   });
 };
 
+const syncThread_Prefetch = async () => {
+  await Promise.all(promises).then(async (response) => {
+    for (let i = 0, _length = response.length; i < _length; i++) {
+      let data = response[i];
+      let fileName = data[2];
+      let data_json = {
+        position: data[0],
+        color: data[1],
+      };
+      let data_json_stringify = JSON.stringify(data_json);
+      await write(`${source_file_name}-${fileName}`, data_json_stringify);
+      state_meta[fileName] = {
+        count: 1,
+        date: new Date(),
+      };
+      cache.set(fileName, data_json_stringify);
+    }
+  });
+};
+
+async function filterkeyCountMap_Prefetch(keyMap) {
+  let afterCheckingCache = [];
+
+  for (let i = 0; i < keyMap.length; i += 2) {
+    let cachedResult = cache.get(keyMap[i]);
+    if (!cachedResult) {
+      afterCheckingCache.push(keyMap[i], keyMap[i + 1]);
+    }
+  }
+
+  let filteredElements = [];
+  for (let i = 0; i < afterCheckingCache.length; i += 2) {
+    let [Exist, data] = await doesExist(
+      `${source_file_name}-${afterCheckingCache[i]}`
+    );
+    if (Exist) {
+      cache.set(afterCheckingCache[i], JSON.stringify(data));
+      pers_cache = get_inCache(pers_cache, afterCheckingCache[i]);
+    } else {
+      filteredElements.push(afterCheckingCache[i], afterCheckingCache[i + 1]);
+      pers_cache = put_inCache(pers_cache, afterCheckingCache[i], {
+        count: 1,
+        date: Date.now(),
+      });
+    }
+  }
+  await throttled_Update_Pers_Cache(mapIntoJSON(cache));
+  return filteredElements;
+}
+
 async function filterkeyCountMap(keyMap) {
   let newKeyMap = [];
   let newBufferMap = {};
@@ -411,28 +460,28 @@ function findSiblings(keyCountMap) {
       myParent[i] = Math.floor(myNode[i] / 2);
     }
 
-    for (let k = 0; k < 8; k++) {
-      let sibling = [
-        myNode[0],
-        2 * myParent[1] + direction[k][0],
-        2 * myParent[2] + direction[k][1],
-        2 * myParent[3] + direction[k][2],
-      ];
-      sibling = sibling.join("-");
-      if (sibling in siblings || sibling in bufferMap) {
-        continue;
-      } else if (sibling in nodePages && nodePages[sibling].pointCount > 0) {
-        nodeKeyCount.push(sibling, nodePages[sibling].pointCount);
-        siblings[sibling] = true;
-      }
-    }
+    // for (let k = 0; k < 8; k++) {
+    //   let sibling = [
+    //     myNode[0],
+    //     2 * myParent[1] + direction[k][0],
+    //     2 * myParent[2] + direction[k][1],
+    //     2 * myParent[3] + direction[k][2],
+    //   ];
+    //   sibling = sibling.join("-");
+    //   if (sibling in siblings || sibling in bufferMap) {
+    //     continue;
+    //   } else if (sibling in nodePages && nodePages[sibling].pointCount > 0) {
+    //     nodeKeyCount.push(sibling, nodePages[sibling].pointCount);
+    //     siblings[sibling] = true;
+    //   }
+    // }
   }
   return nodeKeyCount;
 }
 
 async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
   const startTime4 = performance.now();
-  let keyCountMap = traverseTreeWrapper(
+  let [keyCountMap, nodeToPrefetch] = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
     center_x,
@@ -447,9 +496,12 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
   console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
 
   keyCountMap = await filterkeyCountMap(keyCountMap);
+  prefetch_keyCountMap = await filterkeyCountMap_Prefetch(nodeToPrefetch);
+
   clock.getDelta();
   let totalNodes = keyCountMap.length / 2;
   let doneCount = 0;
+
   for (let m = 0; m < keyCountMap.length; ) {
     let remaining = totalNodes - doneCount;
     let numbWorker = Math.min(MAX_WORKERS, remaining);
@@ -461,18 +513,43 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
       if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
         await syncThread();
         if (controllerSignal && controllerSignal.aborted) {
-          console.log("i am aborted now");
+          console.log("i am aborted now from fetching thread");
           return;
         }
-        // console.log(doneCount, "i am done");
       }
     }
   }
+
+  // ------------------------------------------------------------------
+  totalNodes = prefetch_keyCountMap.length / 2;
+  doneCount = 0;
+  promises = [];
+
+  for (let m = 0; m < prefetch_keyCountMap.length; ) {
+    let remaining = totalNodes - doneCount;
+    let numbWorker = Math.min(MAX_WORKERS, remaining);
+    for (let i = 0; i < numbWorker; i++) {
+      // console.log("i am entering first time");
+      promises.push(
+        createWorker(prefetch_keyCountMap[m], prefetch_keyCountMap[m + 1])
+      );
+      doneCount++;
+      m += 2;
+      if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
+        await syncThread_Prefetch();
+        if (controllerSignal && controllerSignal.aborted) {
+          console.log("i am aborted now from prefetcher");
+          return;
+        }
+      }
+    }
+  }
+
   console.log("it finished at", clock.getDelta());
 
   // find sibling
-  let siblings = findSiblings(keyCountMap);
-  console.log(siblings);
+  // let siblings = findSiblings(keyCountMap);
+  // console.log(siblings);
 }
 
 async function createCameraProj() {
