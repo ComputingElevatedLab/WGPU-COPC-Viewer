@@ -39,7 +39,7 @@ const readPoints = (id, getters) => {
   if (vx > maxIntensity) {
     maxIntensity = vx;
   }
-  color.setRGB(returnPoint[3], returnPoint[3], returnPoint[3]);
+  color.setRGB(returnPoint[3], returnPoint[4], returnPoint[5]);
   colors.push(color.r, color.g, color.b);
   firstTime = false;
 };
@@ -68,8 +68,8 @@ async function load() {
 async function loadData(nodes, pages, copc, myRoot, pointCount) {
   // console.log(copc, myRoot);
   const view = await Copc.loadPointDataView(filename, copc, myRoot);
-    let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
-  // let getters = ["X", "Y", "Z", "Red", "Green", "Blue"].map(view.getter);
+  // let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
+  let getters = ["X", "Y", "Z", "Red", "Green", "Blue"].map(view.getter);
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }

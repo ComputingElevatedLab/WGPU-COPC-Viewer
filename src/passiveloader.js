@@ -75,7 +75,7 @@ function isRendered(
   let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-  return Math.abs(projectedRadius) > 250;
+  return Math.abs(projectedRadius) > 50;
 }
 
 function traverseTreeWrapper(

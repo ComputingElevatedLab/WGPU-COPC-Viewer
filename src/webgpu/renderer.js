@@ -425,7 +425,7 @@ async function encodedCommand() {
 
   let colorAttachment = {
     view: context.getCurrentTexture().createView(),
-    clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+    clearValue: { r: 0.3, g: 0.5, b: 0.8, a: 1.0 },
     loadOp: "clear",
     storeOp: "store",
   };
