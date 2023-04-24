@@ -41,7 +41,7 @@ let vs = `
     fn main(in: VertexInput, @builtin(instance_index) inst_index:u32, @builtin(vertex_index) vertexIndex : u32)->VertexOut{
         var out:VertexOut;
         var cMapIndex:i32; 
-        var radius:f32 = 1.0;
+        var radius:f32 = 2.0;
         var position:vec3<f32> = in.position - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z);
         if(params.current_Axis == 2.0){
             cMapIndex = i32(1.25*(abs(in.position.z - params.z_min)/params.width_z) *19);
@@ -58,14 +58,14 @@ let vs = `
         }
         let cmapped = cMap.colors[cMapIndex];
         var factor = in.color.x/params.max_Intensity;
-        out.color = vec4(cmapped.x/65535.0, cmapped.y/65535.0, cmapped.z/65535.0, 1.0)*factor;
+        out.color = vec4(cmapped.x, cmapped.y, cmapped.z, 1.0)*factor;
         if(factor < 0.1){
             factor = 0.35;
             out.color = vec4(0.0, 1.0, 0.0, 1.0)*factor;
         }
        
         position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);
-        position.z = 1.5*position.z;
+        position.z = position.z;
         out.position = MVP_Matrix* vec4<f32>(position, 1.0);
         return out;
     }

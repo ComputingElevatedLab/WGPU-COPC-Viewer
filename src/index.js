@@ -86,6 +86,7 @@ let x_min,
   controls;
 let pers_cache;
 let global_max_intensity = 0.5;
+let prefetch_keyCountMap;
 
 const canvas = document.getElementById("screen-canvas");
 
@@ -525,25 +526,25 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
   doneCount = 0;
   promises = [];
 
-  for (let m = 0; m < prefetch_keyCountMap.length; ) {
-    let remaining = totalNodes - doneCount;
-    let numbWorker = Math.min(MAX_WORKERS, remaining);
-    for (let i = 0; i < numbWorker; i++) {
-      // console.log("i am entering first time");
-      promises.push(
-        createWorker(prefetch_keyCountMap[m], prefetch_keyCountMap[m + 1])
-      );
-      doneCount++;
-      m += 2;
-      if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
-        await syncThread_Prefetch();
-        if (controllerSignal && controllerSignal.aborted) {
-          console.log("i am aborted now from prefetcher");
-          return;
-        }
-      }
-    }
-  }
+  // for (let m = 0; m < prefetch_keyCountMap.length; ) {
+  //   let remaining = totalNodes - doneCount;
+  //   let numbWorker = Math.min(MAX_WORKERS, remaining);
+  //   for (let i = 0; i < numbWorker; i++) {
+  //     // console.log("i am entering first time");
+  //     promises.push(
+  //       createWorker(prefetch_keyCountMap[m], prefetch_keyCountMap[m + 1])
+  //     );
+  //     doneCount++;
+  //     m += 2;
+  //     if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
+  //       await syncThread_Prefetch();
+  //       if (controllerSignal && controllerSignal.aborted) {
+  //         console.log("i am aborted now from prefetcher");
+  //         return;
+  //       }
+  //     }
+  //   }
+  // }
 
   console.log("it finished at", clock.getDelta());
 
@@ -583,9 +584,10 @@ async function loadCOPC() {
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
+  console.log(widthx, widthy, widthz);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  // widthz = 50;
+  widthz = 50;
 
   console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
 

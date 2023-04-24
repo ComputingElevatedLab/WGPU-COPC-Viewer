@@ -52,25 +52,30 @@ console.log(screenWidth);
 let screenHeight = canvas.height;
 let fovRADIAN = Math.PI / 2;
 
-function isRendered(center, radius, distance, projViewMatrix, level, key) {
+function isRendered(
+  center,
+  radius,
+  distance,
+  projViewMatrix,
+  level,
+  key,
+  nodePages
+) {
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
-  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-    console.log("out of frustum");
-    if (level <= 2) {
-      nodeToPrefetch.push(key, nodePages[key].pointCount);
-    }
-    return false;
-  }
+  // if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+  //   console.log("out of frustum");
+  //   if (level <= 2) {
+  //     nodeToPrefetch.push(key, nodePages[key].pointCount);
+  //   }
+  //   return false;
+  // }
 
   let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-
-  // console.log(pixel_size, projectedRadius)
-
-  return Math.abs(projectedRadius) > 50;
+  return Math.abs(projectedRadius) > 250;
 }
 
 function traverseTreeWrapper(
@@ -104,7 +109,8 @@ function traverseTreeWrapper(
         distance,
         projViewMatrix,
         level,
-        key
+        key,
+        nodePages
       )
     ) {
       return [];
