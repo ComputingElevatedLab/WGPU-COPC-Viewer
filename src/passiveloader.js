@@ -13,6 +13,7 @@ let direction = [
 ];
 
 let cameraFocalLength = computeFocalLength(90);
+let nodeToPrefetch = [];
 
 async function* lazyLoad(offsetMap, url) {
   while (offsetMap.length > 0) {
@@ -51,14 +52,25 @@ console.log(screenWidth);
 let screenHeight = canvas.height;
 let fovRADIAN = Math.PI / 2;
 
-function isRendered(center, radius, distance, projViewMatrix, key, width) {
+function isRendered(
+  center,
+  radius,
+  distance,
+  projViewMatrix,
+  level,
+  key,
+  nodePages
+) {
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
-  // if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-  //   console.log("outof frustum");
-  //   return false;
-  // }
+  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+    console.log("outof frustum");
+    if (level <= 2) {
+      nodeToPrefetch.push(key, nodePages[key].pointCount);
+    }
+    return false;
+  }
 
   let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
@@ -84,6 +96,7 @@ function traverseTreeWrapper(
   // console.log(cameraPosition);
   let width_x_world = width[0];
   // console.log(width);
+  nodeToPrefetch = [];
   function traverseTree(root, center_x, center_y, center_z, width) {
     let [level, x, y, z] = root;
     let newLevel = level + 1;
@@ -99,8 +112,9 @@ function traverseTreeWrapper(
         Math.max(...width),
         distance,
         projViewMatrix,
+        level,
         key,
-        width_x_world
+        nodePages
       )
     ) {
       return [];
@@ -148,7 +162,7 @@ function traverseTreeWrapper(
     width[1],
     width[2],
   ]);
-  return finalPoints;
+  return [finalPoints, nodeToPrefetch];
 }
 
 export { traverseTreeWrapper };

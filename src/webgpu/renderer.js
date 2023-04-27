@@ -43,6 +43,7 @@ const stats = Stats();
 let controller;
 document.body.appendChild(stats.dom);
 let counter = 0;
+let abortController = null;
 
 function throttle(callback, interval) {
   let enableCall = true;
@@ -106,12 +107,60 @@ const iternary = [
   },
 ];
 
+const iternary_prefetch = [
+  // [-30.4, 45.2, 1000],
+  // [-30.4, 45.2, 385],
+  // [-200, -1180, -50],
+  // [-100, -800, -50],
+  {
+    position: [-73.73, -501.92, -392.92],
+    rotation: [1.2094, 0.00637, 0.0024],
+    target: [-73.86, -483.059, -400.0491],
+  },
+  {
+    position: [301.624, -593.87, -428.84],
+    rotation: [0.674, 0.5713, 0.595],
+    target: [39.004, -399.17, -747.49],
+  },
+
+  {
+    position: [192.86, 123.26, -569.66],
+    rotation: [-0.188, 0.7816, 1.8348],
+    target: [-58.227, 75.926, -818.243],
+  },
+  {
+    position: [390.413, 628.155, -426.92],
+    rotation: [-0.8415, 0.57409, 2.6897],
+    target: [-49.49, 120.96, -880.1293],
+  },
+  {
+    position: [-16.802, 365.72, -401.686],
+    rotation: [-1.04325, 0.085746, 3.0917],
+    target: [-58.328, -51.797, -644.941],
+  },
+  {
+    position: [-506.81, 485.7, -407.175],
+    rotation: [-0.504, -0.354, -2.58],
+    target: [-225.78, 118.266, -1072.126],
+  },
+  {
+    position: [-176.74, 28.26, -325.4],
+    rotation: [0.0279, -0.525, -1.5253],
+    target: [154.089, 41.274, -896.084],
+  },
+  {
+    position: [-455, -626.472, -582.78],
+    rotation: [0.739, -0.411, -0.413],
+    target: [-97.051, -72.1351, -1195.76],
+  },
+];
+
 function moveCamera() {
   return new Promise((resolve, reject) => {
     controls.object.position.set(
-      iternary[count].x,
-      iternary[count].y,
-      iternary[count].z
+      iternary_prefetch[count].x,
+      iternary_prefetch[count].y,
+      iternary_prefetch[count].z
     );
     render();
     throttleTreeTravel(projView);
@@ -229,7 +278,11 @@ async function init() {
 
   window.addEventListener("wheel", (event) => {
     // console.log(camera.eyePos());
-    throttleTreeTravel(projView);
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+    throttleTreeTravel(projView, abortController.signal);
   });
 }
 
@@ -496,32 +549,32 @@ async function stages(camera, proj, params) {
 // i guess i am not using this
 
 async function moveFunction() {
-  camera.position.set(...iternary[counter].position);
-  camera.rotation.set(...iternary[counter].rotation);
+  camera.position.set(...iternary_prefetch[counter].position);
+  camera.rotation.set(...iternary_prefetch[counter].rotation);
   camera.updateProjectionMatrix();
-  controls.target.set(...iternary[counter].target);
+  controls.target.set(...iternary_prefetch[counter].target);
   controls.update();
   // controls.setAzimuthalAngle(10);
   // controls.update();
   console.log("--------------- for step--------------", counter);
-  const start = performance.now();
+  // const start = performance.now();
   await retrivePoints(projView, controls);
   const end = performance.now();
-  console.log(`Total retrive Time: ${end - start}ms`);
+  // console.log(`Total retrive Time: ${end - start}ms`);
   console.log("---------------------- I am called --------------");
   render();
 }
 
 async function moveOnInterval() {
-  while (counter < iternary.length) {
+  while (counter < iternary_prefetch.length) {
     await moveFunction();
     counter++;
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    if (counter == iternary.length) {
-      camera.position.set(...iternary[0].position);
-      camera.rotation.set(...iternary[0].rotation);
+    if (counter == iternary_prefetch.length) {
+      camera.position.set(...iternary_prefetch[0].position);
+      camera.rotation.set(...iternary_prefetch[0].rotation);
       camera.updateProjectionMatrix();
-      controls.target.set(...iternary[0].target);
+      controls.target.set(...iternary_prefetch[0].target);
       controls.update();
     }
   }
