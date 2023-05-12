@@ -43,6 +43,7 @@ const stats = Stats();
 let controller;
 document.body.appendChild(stats.dom);
 let counter = 0;
+let abortController = null;
 
 function throttle(callback, interval) {
   let enableCall = true;
@@ -63,66 +64,108 @@ const iternary = [
   // [-30.4, 45.2, 385],
   // [-200, -1180, -50],
   // [-100, -800, -50],
-
   {
-    position: [75.8, -1891.58, -1000],
-    rotation: [1.06, -0.01, -0.01],
-    target: [76.48, -1859.04, -1018.39],
+    position: [-86.304, -696.11, 153],
+    rotation: [0.6606, -0.046, -0.059],
+    target: [-66.069, -427.63, -192.11],
+  },
+  {
+    position: [396.624, -494.87, -405],
+    rotation: [0.621, 0.5114, 0.595],
+    target: [292.08, -386.49, -557.345],
   },
 
   {
-    position: [1733.09, -1697, -1304.4],
-    rotation: [0.5366, 0.5326, 0.7066],
-    target: [1460.59, -1461.38, -1701.67],
+    position: [430.317, -55.587, -449.8],
+    rotation: [-0.0135, 0.511, 1.598],
+    target: [325.781, -58.104, -636.096],
   },
-
   {
-    position: [1734.4, -327.27, -1229.89],
-    rotation: [-0.01, 0.715, 1.586],
-    target: [1302.27, -332.429, -1727.147],
+    position: [13.56, 640.7, -600.75],
+    rotation: [-0.908, -0.15, -3.0199],
+    target: [75.514, 332.93, -840],
   },
+  {
+    position: [-439.39, 546, -595],
+    rotation: [-0.37, -0.559, -2.2],
+    target: [-123, -361.32, -1065],
+  },
+  {
+    position: [-479.82, 22.63, -514.83],
+    rotation: [-0.0185, -0.511, -1.608],
+    target: [-121.92, 10.78, -1152.696],
+  },
+  {
+    position: [-65.6, 5.375, -342.15],
+    rotation: [2.708, -9.99, -1.54],
+    target: [-65.63, 5.375, -1152.7],
+  },
+  {
+    position: [-50.319, -159.89, -503.01],
+    rotation: [0.36, -0.019, -0.05],
+    target: [-37.7, 73.4, -1120],
+  },
+];
 
+const iternary_prefetch = [
+  // [-30.4, 45.2, 1000],
+  // [-30.4, 45.2, 385],
+  // [-200, -1180, -50],
+  // [-100, -800, -50],
+  {
+    position: [-1446.54, -593.34, 809.13],
+    rotation: [-0.0819, -1.229, -1.6579],
+    target: [285.167, -643.68, 196.03],
+  },
+  {
+    position: [-1680, 671, 825.23],
+    rotation: [-0.515, -0.7249, -2.27],
+    target: [-22.98, -250.81, -803.09],
+  },
+  {
+    position: [-688, -408.83, 416.36],
+    rotation: [0.023, -1.093, 1.544],
+    target: [394.502, -395.87, -143.25],
+  },
   // // two after this is data from previous and filled only for making 8 elements
   {
-    position: [1700.384, 668.506, -1354.66],
-    rotation: [-0.637, 0.652, 2.45],
-    target: [1156.56, 244.38, -1927.0],
-  },
-
-  {
-    position: [-105.79, 691, -1436.49],
-    rotation: [-0.921, 0.0069, 3.13],
-    target: [-111.98, -21.979, -1978.4],
-  },
-
-  {
-    position: [-1702.4, -1657.5, -1375.1],
-    rotation: [0.678, 0.517, -0.551],
-    target: [-1098.96, -992.97, -2200],
+    position: [1575.29, -1510, 706.4],
+    rotation: [0.64, 0.663, 0.687],
+    target: [321.3, -547.55, -577.08],
   },
   {
-    position: [-460.26, -1638.5, -1371.8],
-    rotation: [0.707, 0.0097, 0.011],
-    target: [-471.02, -923.73, -2208.309],
+    position: [262.9, -687.4, 532.6],
+    rotation: [0.248, -1.205, -1.305],
+    target: [1190.32, -599.99, 188.586],
   },
   {
-    position: [1530.09, -1650.21, -1278],
-    rotation: [0.778, 0.696, 0.57],
-    target: [465.79, -757.16, -2183.9],
+    position: [1464.163, 383.5, 660.747],
+    rotation: [-0.405, 0.438, 2.361],
+    target: [599.62, -343.31, -1033],
   },
   {
-    position: [159.13, -448.97, 3.519],
-    rotation: [0, 0, 0],
-    target: [159.13, -448.97, 0],
+    position: [-69.99, -365.41, 849.13],
+    rotation: [-0.888, 0.018, 3.126],
+    target: [-100.8, -1652.617, -196.316],
+  },
+  {
+    position: [2210.28, 753.21, 1087],
+    rotation: [-0.91, 0.89, 2.6],
+    target: [266.4, -490.47, 125.552],
+  },
+  {
+    position: [99.5, -122.68, 412.21],
+    rotation: [-0.97, -0.008, -3.13],
+    target: [105.73, -725.16, 0.076],
   },
 ];
 
 function moveCamera() {
   return new Promise((resolve, reject) => {
     controls.object.position.set(
-      iternary[count].x,
-      iternary[count].y,
-      iternary[count].z
+      iternary_prefetch[count].x,
+      iternary_prefetch[count].y,
+      iternary_prefetch[count].z
     );
     render();
     throttleTreeTravel(projView);
@@ -135,7 +178,7 @@ function itenaryStart(fn) {
   fn().then((response) => {
     console.log("done1");
     count++;
-    if (count < 5) setTimeout(() => itenaryStart(fn), 15000);
+    if (count < 5) setTimeout(() => itenaryStart(fn), 10000);
   });
 }
 
@@ -240,7 +283,11 @@ async function init() {
 
   window.addEventListener("wheel", (event) => {
     // console.log(camera.eyePos());
-    throttleTreeTravel(projView);
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+    throttleTreeTravel(projView, abortController.signal);
   });
 }
 
@@ -507,37 +554,35 @@ async function stages(camera, proj, params) {
 // i guess i am not using this
 
 async function moveFunction() {
-  camera.position.set(...iternary[counter].position);
-  camera.rotation.set(...iternary[counter].rotation);
+  camera.position.set(...iternary_prefetch[counter].position);
+  camera.rotation.set(...iternary_prefetch[counter].rotation);
   camera.updateProjectionMatrix();
-  controls.target.set(...iternary[counter].target);
+  controls.target.set(...iternary_prefetch[counter].target);
   controls.update();
   // controls.setAzimuthalAngle(10);
   // controls.update();
   console.log("--------------- for step--------------", counter);
-  const start = performance.now();
+  // const start = performance.now();
   await retrivePoints(projView, controls);
   const end = performance.now();
-  console.log(`Total retrive Time: ${end - start}ms`);
+  // console.log(`Total retrive Time: ${end - start}ms`);
   console.log("---------------------- I am called --------------");
   render();
 }
 
 async function moveOnInterval() {
-  console.log(counter, iternary.length);
-  while (counter < iternary.length) {
+  while (counter < iternary_prefetch.length) {
     await moveFunction();
     counter++;
-    await new Promise((resolve) => setTimeout(resolve, 20000));
-    if (counter == iternary.length) {
-      camera.position.set(...iternary[0].position);
-      camera.rotation.set(...iternary[0].rotation);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    if (counter == iternary_prefetch.length) {
+      camera.position.set(...iternary_prefetch[0].position);
+      camera.rotation.set(...iternary_prefetch[0].rotation);
       camera.updateProjectionMatrix();
-      controls.target.set(...iternary[0].target);
+      controls.target.set(...iternary_prefetch[0].target);
       controls.update();
     }
   }
-  console.log(counter);
 }
 async function renderStages(position, color) {
   console.log(" i am insider another render");
@@ -556,12 +601,15 @@ async function renderWrapper() {
   await updateMaxIntensity();
   render();
   // await retrivePoints(projView, controls);
+  render();
   // camera.position.set(...iternary[0].position);
   // camera.rotation.set(...iternary[0].rotation);
   camera.updateProjectionMatrix();
   // controls.target.set(...iternary[0].target);
   controls.update();
   await moveOnInterval();
+
+  // itenaryStart(moveCamera);
 }
 
 function render(timestamp) {

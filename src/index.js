@@ -545,11 +545,62 @@ async function filterkeyCountMap(keyMap) {
   //filter and delete unwanted bufferMap
 }
 
+const syncThread_Prefetch = async () => {
+  await Promise.all(promises).then(async (response) => {
+    for (let i = 0, _length = response.length; i < _length; i++) {
+      let data = response[i];
+      let fileName = data[2];
+      let data_json = {
+        position: data[0],
+        color: data[1],
+      };
+      let data_json_stringify = JSON.stringify(data_json);
+      await write(`${source_file_name}-${fileName}`, data_json_stringify);
+      state_meta[fileName] = {
+        count: 1,
+        date: new Date(),
+      };
+      cache.set(fileName, data_json_stringify);
+    }
+  });
+};
+
+async function filterkeyCountMap_Prefetch(keyMap) {
+  let afterCheckingCache = [];
+
+  for (let i = 0; i < keyMap.length; i += 2) {
+    let cachedResult = cache.get(keyMap[i]);
+    if (!cachedResult) {
+      afterCheckingCache.push(keyMap[i], keyMap[i + 1]);
+    }
+  }
+
+  let filteredElements = [];
+  for (let i = 0; i < afterCheckingCache.length; i += 2) {
+    let [Exist, data] = await doesExist(
+      `${source_file_name}-${afterCheckingCache[i]}`
+    );
+    if (Exist) {
+      cache.set(afterCheckingCache[i], JSON.stringify(data));
+      pers_cache = await get_inCache(pers_cache, afterCheckingCache[i]);
+    } else {
+      filteredElements.push(afterCheckingCache[i], afterCheckingCache[i + 1]);
+      pers_cache = await put_inCache(pers_cache, afterCheckingCache[i], {
+        count: 1,
+        date: Date.now(),
+      });
+    }
+  }
+  await throttled_Update_Pers_Cache(mapIntoJSON(cache));
+  return filteredElements;
+}
+
 async function retrivePoints(projectionViewMatrix, newCamera) {
+  const start = performance.now();
   total = 0;
   if (newCamera != undefined) camera = newCamera;
   const startTime4 = performance.now();
-  let keyCountMap = traverseTreeWrapper(
+  let [keyCountMap, nodeToPrefetch] = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
     center_x,
@@ -571,6 +622,8 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
   let doneCount = 0;
 
   let existingBuffers = Object.keys(bufferMap);
+  // let prefetch_keyCountMap = [];
+  let prefetch_keyCountMap = await filterkeyCountMap_Prefetch(nodeToPrefetch);
   // console.log("before fetching", existingBuffers.length);
 
   for (let m = 0; m < keyCountMap.length; ) {
@@ -583,7 +636,38 @@ async function retrivePoints(projectionViewMatrix, newCamera) {
       m += 2;
       if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
         await syncThread();
+        // if (controllerSignal && controllerSignal.aborted) {
+        //   console.log("i am aborted now from fetching thread");
+        //   return;
+        // }
         // console.log(doneCount, "i am done");
+      }
+    }
+  }
+
+  const end = performance.now();
+  console.log(`Total retrive Time: ${end - start}ms`);
+
+  totalNodes = prefetch_keyCountMap.length / 2;
+  doneCount = 0;
+  promises = [];
+
+  for (let m = 0; m < prefetch_keyCountMap.length; ) {
+    let remaining = totalNodes - doneCount;
+    let numbWorker = Math.min(MAX_WORKERS, remaining);
+    for (let i = 0; i < numbWorker; i++) {
+      // console.log("i am entering first time");
+      promises.push(
+        createWorker(prefetch_keyCountMap[m], prefetch_keyCountMap[m + 1])
+      );
+      doneCount++;
+      m += 2;
+      if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
+        await syncThread_Prefetch();
+        // if (controllerSignal && controllerSignal.aborted) {
+        //   console.log("i am aborted now from prefetcher");
+        //   return;
+        // }
       }
     }
   }
@@ -658,7 +742,7 @@ async function loadCOPC() {
   widthz = Math.abs(z_max - z_min);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  // widthz = 1500;
+  widthz = 500.0;
   console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
@@ -676,7 +760,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  // await clear();
+  await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();
