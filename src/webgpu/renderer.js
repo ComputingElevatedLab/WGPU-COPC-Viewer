@@ -40,6 +40,7 @@ let paramsBuffer;
 let currentAxis = 2;
 let param;
 let abortController = null;
+let levelBuffer;
 
 const stats = Stats();
 document.body.appendChild(stats.dom);
@@ -211,7 +212,7 @@ async function intRenderPipeline() {
   let positionAttribute_Desc = {
     shaderLocation: 0,
     offset: 0,
-    format: "float32x3",
+    format: "float32x4",
   };
 
   let colorAttribute_Desc = {
@@ -225,7 +226,7 @@ async function intRenderPipeline() {
     entryPoint: "main",
     buffers: [
       {
-        arrayStride: 12,
+        arrayStride: 16,
         stepMode: "instance",
         attributes: [positionAttribute_Desc],
       },
@@ -268,7 +269,7 @@ async function initVertexBuffer() {
   let totalNumberOfPoints = numPoints;
   positionBuffer = device.createBuffer({
     label: "vertex position buffer",
-    size: totalNumberOfPoints * 12,
+    size: totalNumberOfPoints * 16,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
   });
@@ -304,6 +305,15 @@ function initUniform(cam, projMatrix, params) {
   let mapArray_params = new Float32Array(paramsBuffer.getMappedRange());
   mapArray_params.set(params);
   paramsBuffer.unmap();
+
+  levelBuffer = device.createBuffer({
+    size: 4,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: true,
+  });
+  let mapArray_level = new Float32Array(levelBuffer.getMappedRange());
+  mapArray_level.set([0]);
+  levelBuffer.unmap();
 
   function get1DArray(arr) {
     return +arr.join().split(",");
@@ -529,10 +539,10 @@ function render(timestamp) {
   renderPass.setViewport(0, 0, canvas.width, canvas.height, 0.0, 1.0);
   renderPass.setBindGroup(0, mvp_BG);
   for (let key in bufferMap) {
+    // console.log(bufferMap[key].position);
     renderPass.setVertexBuffer(0, bufferMap[key].position);
     renderPass.setVertexBuffer(1, bufferMap[key].color);
-    // console.log("length is", +bufferMap[key].position.label / 3);
-    numPoints = +bufferMap[key].position.label / 3;
+    numPoints = +bufferMap[key].position.label / 4;
     renderPass.draw(4, numPoints, 0, 0);
   }
   renderPass.end();

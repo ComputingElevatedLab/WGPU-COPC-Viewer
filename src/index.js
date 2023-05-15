@@ -103,6 +103,8 @@ function isTerminated(worker) {
 }
 
 function createWorker(data1, data2) {
+  let myNode = data1.split("-").map(Number);
+  let myLevel = myNode[0];
   return new Promise((resolve) => {
     let worker = new Worker();
     worker.onmessage = (event) => {
@@ -124,13 +126,14 @@ function createWorker(data1, data2) {
             scaleFactor[0],
             scaleFactor[1],
             scaleFactor[2],
+            myLevel,
           ],
         ]);
       } else {
         workerCount += 1;
         let position = postMessageRes[0];
         let color = postMessageRes[1];
-        let [minZ, maxZ, maxIntensity] = postMessageRes[2];
+        let [minZ, maxZ, maxIntensity, dataLevel] = postMessageRes[2];
         if (maxIntensity > global_max_intensity) {
           global_max_intensity = maxIntensity;
         }
@@ -138,10 +141,15 @@ function createWorker(data1, data2) {
         let localColor = [];
         for (let i = 0; i < position.length; i++) {
           positions.push(position[i]);
+          if (i > 0 && i % 3 == 0) {
+            localPosition.push(dataLevel);
+          }
           localPosition.push(position[i]);
           colors.push(color[i]);
           localColor.push(color[i]);
         }
+        localPosition.push(dataLevel);
+
         if (workerCount == MAX_WORKERS) {
           workerCount = 0;
           promises = [];
@@ -230,6 +238,7 @@ let keyCountMap;
 
 const createBuffer = (positions, colors) => {
   let size = positions.length;
+  // console.log("size is ", size);
   let positionBuffer = device.createBuffer({
     label: `${size}`,
     size: size * 4,
@@ -259,6 +268,7 @@ const syncThread = async () => {
     for (let i = 0, _length = response.length; i < _length; i++) {
       let data = response[i];
       let fileName = data[2];
+
       let data_json = {
         position: data[0],
         color: data[1],
@@ -269,8 +279,9 @@ const syncThread = async () => {
         count: 1,
         date: new Date(),
       };
-
+      // console.log("data sent from worker is", data[0].length);
       let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
+
       bufferMap[data[2]] = {
         position: positionBuffer,
         color: colorBuffer,
@@ -365,7 +376,7 @@ async function filterkeyCountMap(keyMap) {
   console.log(`Time taken: ${endTime1 - startTime1}ms`);
 
   // --------------------- these are new ones
-  // are they in cache?
+  // are they in non-persistence cache?
   const startTime2 = performance.now();
 
   let afterCheckingCache = [];
@@ -606,7 +617,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  // await clear()
+  await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();

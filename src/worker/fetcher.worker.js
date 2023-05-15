@@ -18,7 +18,8 @@ let x_min,
   widthz,
   scaleX,
   scaleY,
-  scaleZ;
+  scaleZ,
+  level;
 let positions = [];
 // const filename = process.env.filename;
 const filename = process.env.filename;
@@ -73,7 +74,7 @@ async function loadData(nodes, pages, copc, myRoot, pointCount) {
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }
-  postMessage([positions, colors, [minZ, maxZ, maxIntensity]]);
+  postMessage([positions, colors, [minZ, maxZ, maxIntensity, level]]);
 }
 
 load();
@@ -98,5 +99,6 @@ onmessage = function (message) {
   scaleX = message.data[5][6];
   scaleY = message.data[5][7];
   scaleZ = message.data[5][8];
+  level = message.data[5][9];
   loadData(nodes, pages, copc, myRoot, pointCount);
 };
