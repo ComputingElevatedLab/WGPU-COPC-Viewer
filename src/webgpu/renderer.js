@@ -432,6 +432,7 @@ async function createDepthBuffer() {
 
 async function encodedCommand() {
   // create render pass descriptor
+  console.log(currentAxis);
 
   let colorAttachment = {
     view: context.getCurrentTexture().createView(),
