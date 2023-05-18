@@ -85,7 +85,7 @@ let x_min,
   params,
   controls;
 let pers_cache;
-let global_max_intensity = 0.5;
+let global_max_intensity = 3762;
 let prefetch_keyCountMap;
 
 const canvas = document.getElementById("screen-canvas");
