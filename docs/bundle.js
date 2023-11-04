@@ -3219,6 +3219,7 @@ async function loadCOPC() {
   const filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const copc = await copc__WEBPACK_IMPORTED_MODULE_1__.Copc.create(filename);
   scaleFactor = copc.header.scale;
+  console.log(copc)
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
   [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;

@@ -53,15 +53,14 @@ let vs = `
         var radius:f32 = 3.0* pow(0.5, level);
         radius = max(radius, 1.0);
         var position:vec3<f32> = in.position.xyz - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z);
-        var factor = in.color.x/65536.0;
+        var factor = in.color.x/params.max_Intensity;
         if(params.current_Axis == 2.0){
             cMapIndex = i32((abs(in.position.z - params.z_min)/params.width_z) *19);
             let mappedColor = getCmapped(cMapIndex);
             out.color = vec4(mappedColor.xyz, 1.0);
             if(cMapIndex < 0){
-                out.color = vec4(0.5, 0.5, 0.0, 1.0);
+                out.color = vec4(1.0, 0.0, 0.0, 1.0);
             }
-            factor = in.color.x/params.max_Intensity;
         }
         else if(params.current_Axis == 1.0){
             cMapIndex = i32(1.25*(abs(in.position.y - params.y_min)/params.width_y) *19);
@@ -79,7 +78,7 @@ let vs = `
         if(factor < 0.1){
             factor = 0.35;
         }
-        out.color = vec4(out.color.x, out.color.y, out.color.z, 1.0)*factor;
+        out.color = vec4(out.color.x, out.color.y, out.color.z, factor);
         // if(level <= 1.0){
         //     out.color = vec4(0.0, 1.0, 0.0, 1.0);
         // }

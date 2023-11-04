@@ -85,7 +85,7 @@ let x_min,
   params,
   controls;
 let pers_cache;
-let global_max_intensity = 3762;
+let global_max_intensity = 0;
 let prefetch_keyCountMap;
 
 const canvas = document.getElementById("screen-canvas");
@@ -132,6 +132,7 @@ function createWorker(data1, data2) {
       } else {
         workerCount += 1;
         let position = postMessageRes[0];
+        console.log("position is", position)
         let color = postMessageRes[1];
         let [minZ, maxZ, maxIntensity, dataLevel] = postMessageRes[2];
         if (maxIntensity > global_max_intensity) {
@@ -155,7 +156,7 @@ function createWorker(data1, data2) {
           promises = [];
         }
         worker.terminate();
-        resolve([localPosition, localColor, data1]);
+        resolve([localPosition, localColor, data1, maxIntensity]);
       }
     };
   });
@@ -272,7 +273,9 @@ const syncThread = async () => {
       let data_json = {
         position: data[0],
         color: data[1],
+        maxIntensity: data[3]
       };
+
       let data_json_stringify = JSON.stringify(data_json);
       await write(`${source_file_name}-${fileName}`, data_json_stringify);
       state_meta[fileName] = {
@@ -285,6 +288,7 @@ const syncThread = async () => {
       bufferMap[data[2]] = {
         position: positionBuffer,
         color: colorBuffer,
+        maxIntensity: data[3]
       };
     }
     // console.log(bufferMap);
@@ -297,9 +301,11 @@ const syncThread_Prefetch = async () => {
     for (let i = 0, _length = response.length; i < _length; i++) {
       let data = response[i];
       let fileName = data[2];
+      
       let data_json = {
         position: data[0],
         color: data[1],
+        maxIntensity: data[3]
       };
       let data_json_stringify = JSON.stringify(data_json);
       await write(`${source_file_name}-${fileName}`, data_json_stringify);
@@ -364,10 +370,15 @@ async function filterkeyCountMap(keyMap) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
     } else {
       // console.log(`found ${keyMap[i]} in existing buffer`);
+      let maxIntensity = bufferMap[keyMap[i]].maxIntensity;
       newBufferMap[keyMap[i]] = {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
+        maxIntensity: maxIntensity
       };
+      if (maxIntensity > global_max_intensity) {
+        global_max_intensity = maxIntensity;
+      }
       pers_cache = get_inCache(pers_cache, keyMap[i]);
       delete toDeleteArray[keyMap[i]];
     }
@@ -390,10 +401,15 @@ async function filterkeyCountMap(keyMap) {
         cachedResult.position,
         cachedResult.color
       );
+      const maxIntensity = cachedResult.maxIntensity
       newBufferMap[newKeyMap[i]] = {
         position: positionBuffer,
         color: colorBuffer,
+        maxIntensity: maxIntensity
       };
+      if(maxIntensity > global_max_intensity){
+        global_max_intensity = maxIntensity;
+      }
     } else {
       afterCheckingCache.push(newKeyMap[i], newKeyMap[i + 1]);
     }
@@ -417,7 +433,11 @@ async function filterkeyCountMap(keyMap) {
       newBufferMap[afterCheckingCache[i]] = {
         position: positionBuffer,
         color: colorBuffer,
+        maxIntensity: data.maxIntensity
       };
+      if(data.maxIntensity > global_max_intensity){
+        global_max_intensity = data.maxIntensity;
+      }
       cache.set(afterCheckingCache[i], JSON.stringify(data));
       pers_cache = get_inCache(pers_cache, afterCheckingCache[i]);
     } else {
@@ -586,26 +606,31 @@ async function loadCOPC() {
   // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const filename = process.env.filename;
   const copc = await Copc.create(filename);
-  console.log(copc.header);
+  console.log("file is", copc)
   scaleFactor = copc.header.scale;
+  scaleFactor = [1.0, 1.0, 1.0]
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
   [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
-  scaleFactor = [1, 1, 1];
+  x_min *= scaleFactor[0]; 
+  x_max *= scaleFactor[0];
+  y_min *= scaleFactor[1];
+  y_max *= scaleFactor[1];
+  z_min *= scaleFactor[2];
+  z_max *= scaleFactor[2];
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
   console.log(widthx, widthy, widthz);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
-  widthz = 50;
 
-  console.log("minimum z is", z_min, "z-width is", widthz, copc.info.cube);
+  console.log("minimum z is", z_min, "z-width is", widthz, copc);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
-  center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) * scaleFactor[0];
-  center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy) * scaleFactor[1];
-  center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz) * scaleFactor[2];
+  center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) ;
+  center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy);
+  center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz);
   // center is moved to origin and we dont need to do this but for sake for checking the cordinate system, i am doing this
   const { nodes: nodePages1, pages: pages } = await Copc.loadHierarchyPage(
     filename,
@@ -617,7 +642,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  // await clear();
+  await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();
