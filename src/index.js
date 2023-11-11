@@ -611,7 +611,7 @@ async function loadCOPC() {
   scaleFactor = [1.0, 1.0, 1.0]
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
-  [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+  [x_min, y_min, z_min, x_max, y_max, z_max] = [...copc.header.min, ...copc.header.max];
   x_min *= scaleFactor[0]; 
   x_max *= scaleFactor[0];
   y_min *= scaleFactor[1];

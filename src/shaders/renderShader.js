@@ -61,6 +61,8 @@ let vs = `
             if(cMapIndex < 0){
                 out.color = vec4(1.0, 0.0, 0.0, 1.0);
             }
+            out.color = vec4(out.color.x, out.color.y, out.color.z, 1.0)*factor;
+
         }
         else if(params.current_Axis == 1.0){
             cMapIndex = i32(1.25*(abs(in.position.y - params.y_min)/params.width_y) *19);
@@ -71,14 +73,12 @@ let vs = `
             out.color = getCmapped(cMapIndex);
         }
         else{
-            out.color = vec4(in.color.x/65536.0, in.color.y/65536.0, in.color.z/65536.0, 1.0);
-            factor = 1.0;
+            out.color = vec4(in.color.x/255.0, in.color.y/225.0, in.color.z/255.0, 1.0);
         }
 
         if(factor < 0.1){
             factor = 0.35;
         }
-        out.color = vec4(out.color.x, out.color.y, out.color.z, factor);
         // if(level <= 1.0){
         //     out.color = vec4(0.0, 1.0, 0.0, 1.0);
         // }
