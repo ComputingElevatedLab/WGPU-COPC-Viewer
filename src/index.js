@@ -132,7 +132,6 @@ function createWorker(data1, data2) {
       } else {
         workerCount += 1;
         let position = postMessageRes[0];
-        console.log("position is", position)
         let color = postMessageRes[1];
         let [minZ, maxZ, maxIntensity, dataLevel] = postMessageRes[2];
         if (maxIntensity > global_max_intensity) {
@@ -521,7 +520,7 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
     center_z,
     [0.5 * widthx, 0.5 * widthy, 0.5 * widthz],
     scaleFactor,
-    camera,
+    controls,
     projectionViewMatrix
   );
   const endTime4 = performance.now();
@@ -585,10 +584,35 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 500], [0, 0, 0], [0, 1, 0], 500, [
-    window.innerWidth,
-    window.innerHeight,
-  ]);
+  camera = new THREE.PerspectiveCamera(
+    90,
+    canvas.width / canvas.height,
+    0.1,
+    20000
+  );
+  camera.position.set(0, 0, 2500);
+  camera.up.set(0, 0, 1);
+  camera.updateProjectionMatrix();
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.5;
+  // controls.minAzimuthAngle = 0;
+  // controls.maxAzimuthAngle = 0.25 * Math.PI;
+  // controls.minPolarAngle = 0;
+  // controls.maxPolarAngle = Math.PI;
+  controls.rotateSpeed = 2;
+  controls.zoomSpeed = 2;
+  controls.panSpeed = 5;
+  // controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.5;
+  controls.update();
+
+  // camera = new ArcballCamera([100, -100, 100], [0, 0, 0], [0, 1, 0], 300, [
+  //   window.innerWidth,
+  //   window.innerHeight,
+  // ]);
 
   proj = mat4.perspective(
     mat4.create(),

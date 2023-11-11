@@ -50,7 +50,7 @@ let vs = `
         var out:VertexOut;
         var cMapIndex:i32; 
         var level:f32 = in.position.w;
-        var radius:f32 = 3.0* pow(0.5, level);
+        var radius:f32 = 3.0* pow(0.6, level);
         radius = max(radius, 1.0);
         var position:vec3<f32> = in.position.xyz - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z);
         var factor = in.color.x/params.max_Intensity;

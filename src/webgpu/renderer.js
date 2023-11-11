@@ -358,40 +358,8 @@ function initUniform(cam, projMatrix, params) {
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-  var controller = new Controller();
-
-  controller.mousemove = function (prev, cur, evt) {
-    if (evt.buttons == 1) {
-      // console.log("rotate");
-      camera.rotate(prev, cur);
-    } else if (evt.buttons == 2) {
-      camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
-    }
-  };
-
-  controller.wheel = function (amt) {
-    // console.log(amt);
-    camera.zoom(amt);
-  };
-  controller.pinch = controller.wheel;
-  controller.twoFingerDrag = function (drag) {
-    camera.pan(drag);
-  };
-  controller.registerForCanvas(canvas);
-  var canvasVisible = false;
-  var observer = new IntersectionObserver(
-    function (e) {
-      if (e[0].isIntersecting) {
-        canvasVisible = true;
-      } else {
-        canvasVisible = false;
-      }
-    },
-    { threshold: [0] }
-  );
-  observer.observe(canvas);
-
-  projView = mat4.mul(projView, proj, camera.camera);
+  let viewMatrix = camera.matrixWorldInverse.elements
+  projView = mat4.mul(projView, proj, viewMatrix);
   return projView;
 }
 
@@ -520,7 +488,8 @@ function render(timestamp) {
   var startTime = performance.now();
   commandEncoder = device.createCommandEncoder();
   //  this is not helpful for tree traversal so model matrix rotation is removed for now
-  projView = mat4.mul(projView, proj, camera.camera);
+  let viewMatrix = camera.matrixWorldInverse.elements;
+  projView = mat4.mul(projView, proj, viewMatrix);
   // update(timestamp);
   encodedCommand();
 

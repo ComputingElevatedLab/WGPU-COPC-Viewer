@@ -64,13 +64,13 @@ function isRendered(
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
-  // if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-  //   console.log("out of frustum");
-  //   if (level <= 2) {
-  //     nodeToPrefetch.push(key, nodePages[key].pointCount);
-  //   }
-  //   return false;
-  // }
+  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+    console.log("out of frustum");
+    if (level <= 2) {
+      nodeToPrefetch.push(key, nodePages[key].pointCount);
+    }
+    return false;
+  }
 
   let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
@@ -86,11 +86,10 @@ function traverseTreeWrapper(
   center_z,
   width,
   scale,
-  camera,
+  controls,
   projViewMatrix
 ) {
-  let cameraPosition = camera.eyePos();
-  console.log(cameraPosition);
+  let cameraPosition = controls.object.position.toArray();
   let width_x_world = width[0];
   nodeToPrefetch = [];
   function traverseTree(root, center_x, center_y, center_z, width) {
