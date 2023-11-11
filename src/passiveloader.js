@@ -64,18 +64,18 @@ function isRendered(
   let minPoint = [center[0] - radius, center[1] - radius, center[2] - radius];
   let maxPoint = [center[0] + radius, center[1] + radius, center[2] + radius];
   let frustum = new Frustum(projViewMatrix);
-  // if (!frustum.containsBox([...minPoint, ...maxPoint])) {
-  //   console.log("out of frustum");
-  //   if (level <= 2) {
-  //     nodeToPrefetch.push(key, nodePages[key].pointCount);
-  //   }
-  //   return false;
-  // }
+  if (!frustum.containsBox([...minPoint, ...maxPoint])) {
+    console.log("out of frustum");
+    if (level <= 2) {
+      nodeToPrefetch.push(key, nodePages[key].pointCount);
+    }
+    return false;
+  }
 
   let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-  return Math.abs(projectedRadius) > 60;
+  return Math.abs(projectedRadius) > 80;
 }
 
 function traverseTreeWrapper(

@@ -59,6 +59,7 @@ let toDelete = false;
 let postMessageRes = 100;
 let positions = [];
 let colors = [];
+let intensities = [];
 let workerCount = 0;
 const clock = new THREE.Clock();
 const workers = new Array(1).fill(null);
@@ -134,28 +135,33 @@ function createWorker(data1, data2) {
         let position = postMessageRes[0];
         let color = postMessageRes[1];
         let [minZ, maxZ, maxIntensity, dataLevel] = postMessageRes[2];
+        let intensityArray = postMessageRes[3]
         if (maxIntensity > global_max_intensity) {
           global_max_intensity = maxIntensity;
         }
         let localPosition = [];
         let localColor = [];
+        let localIntensity = []
         for (let i = 0; i < position.length; i++) {
           positions.push(position[i]);
           if (i > 0 && i % 3 == 0) {
-            localPosition.push(dataLevel);
+          localPosition.push(dataLevel);
+          localIntensity.push(intensityArray[i/3])
           }
           localPosition.push(position[i]);
           colors.push(color[i]);
           localColor.push(color[i]);
+          intensities.push(postMessageRes[3])
         }
         localPosition.push(dataLevel);
+        localIntensity.push(intensityArray[intensityArray.length -1])  
 
         if (workerCount == MAX_WORKERS) {
           workerCount = 0;
           promises = [];
         }
         worker.terminate();
-        resolve([localPosition, localColor, data1, maxIntensity]);
+        resolve([localPosition, localColor, data1, maxIntensity, localIntensity]);
       }
     };
   });
@@ -236,7 +242,7 @@ function sleep(ms) {
 
 let keyCountMap;
 
-const createBuffer = (positions, colors) => {
+const createBuffer = (positions, colors, intensity) => {
   let size = positions.length;
   // console.log("size is ", size);
   let positionBuffer = device.createBuffer({
@@ -260,7 +266,19 @@ const createBuffer = (positions, colors) => {
   let colorMappedArray = new Float32Array(colorBuffer.getMappedRange());
   colorMappedArray.set(colors);
   colorBuffer.unmap();
-  return [positionBuffer, colorBuffer];
+
+  const intensityLength = intensity.length;
+  let intensityBuffer = device.createBuffer({
+      size: intensityLength * 4,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+  
+  let intensityMappedArray = new Float32Array(intensityBuffer.getMappedRange());
+  intensityMappedArray.set(intensity);
+  intensityBuffer.unmap();  
+
+  return [positionBuffer, colorBuffer, intensityBuffer];
 };
 
 const syncThread = async () => {
@@ -272,6 +290,7 @@ const syncThread = async () => {
       let data_json = {
         position: data[0],
         color: data[1],
+        intensity: data[4],
         maxIntensity: data[3]
       };
 
@@ -282,12 +301,13 @@ const syncThread = async () => {
         date: new Date(),
       };
       // console.log("data sent from worker is", data[0].length);
-      let [positionBuffer, colorBuffer] = createBuffer(data[0], data[1]);
+      let [positionBuffer, colorBuffer, intensityBuffer] = createBuffer(data[0], data[1], data[4]);
 
       bufferMap[data[2]] = {
         position: positionBuffer,
         color: colorBuffer,
-        maxIntensity: data[3]
+        maxIntensity: data[3],
+        intensity: intensityBuffer
       };
     }
     // console.log(bufferMap);
@@ -354,6 +374,7 @@ async function filterkeyCountMap(keyMap) {
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
+    toDeleteMap[key].intensity.destroy();
     delete toDeleteMap[key];
   }
 
@@ -373,6 +394,7 @@ async function filterkeyCountMap(keyMap) {
       newBufferMap[keyMap[i]] = {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
+        intensity: bufferMap[keyMap[i]].intensity,
         maxIntensity: maxIntensity
       };
       if (maxIntensity > global_max_intensity) {
@@ -396,14 +418,16 @@ async function filterkeyCountMap(keyMap) {
       // console.log(`found ${newKeyMap[i]} in cache`);
       cachedResult = JSON.parse(cachedResult);
       pers_cache = get_inCache(pers_cache, newKeyMap[i]);
-      let [positionBuffer, colorBuffer] = createBuffer(
+      let [positionBuffer, colorBuffer, intensityBuffer] = createBuffer(
         cachedResult.position,
-        cachedResult.color
+        cachedResult.color,
+        cachedResult.intensity
       );
       const maxIntensity = cachedResult.maxIntensity
       newBufferMap[newKeyMap[i]] = {
         position: positionBuffer,
         color: colorBuffer,
+        intensity: intensityBuffer,
         maxIntensity: maxIntensity
       };
       if(maxIntensity > global_max_intensity){
@@ -425,13 +449,15 @@ async function filterkeyCountMap(keyMap) {
     if (Exist) {
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
-      let [positionBuffer, colorBuffer] = createBuffer(
+      let [positionBuffer, colorBuffer, intensityBuffer] = createBuffer(
         data.position,
-        data.color
+        data.color,
+        data.intensity
       );
       newBufferMap[afterCheckingCache[i]] = {
         position: positionBuffer,
         color: colorBuffer,
+        intensity: intensityBuffer,
         maxIntensity: data.maxIntensity
       };
       if(data.maxIntensity > global_max_intensity){
@@ -457,6 +483,7 @@ async function filterkeyCountMap(keyMap) {
     toDeleteMap[key] = {
       position: bufferMap[key].position,
       color: bufferMap[key].position,
+      intensity: bufferMap[key].intensity
     };
   }
   bufferMap = newBufferMap;
@@ -584,15 +611,18 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
 }
 
 async function createCameraProj() {
-  camera = new ArcballCamera([0, 0, 1000], [0, 0, 0], [0, 1, 0], 500, [
-    window.innerWidth,
-    window.innerHeight,
+  const _width = canvas.width;
+  const _height = canvas.height;
+
+  camera = new ArcballCamera([500, 500, 1000], [0, 0, 0], [0, 1, 0], 500, [
+    _width,
+    _height,
   ]);
 
   proj = mat4.perspective(
     mat4.create(),
     (90 * Math.PI) / 180.0,
-    canvas.width / canvas.height,
+    _width / _height,
     0.1,
     8000
   );
@@ -610,7 +640,7 @@ async function loadCOPC() {
   scaleFactor = [1.0, 1.0, 1.0]
   copcString = JSON.stringify(copc);
   // scale = copc.header.scale[0];
-  [x_min, y_min, z_min, x_max, y_max, z_max] = copc.info.cube;
+  [x_min, y_min, z_min, x_max, y_max, z_max] = [...copc.header.min, ...copc.header.max];
   x_min *= scaleFactor[0]; 
   x_max *= scaleFactor[0];
   y_min *= scaleFactor[1];

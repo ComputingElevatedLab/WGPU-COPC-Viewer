@@ -1,7 +1,8 @@
 let vs = `
     struct VertexInput {
         @location(0) position: vec4<f32>,
-        @location(1) color: vec3<f32>
+        @location(1) color: vec3<f32>,
+        @location(2) intensity: f32
     };
 
     struct VertexOut {
@@ -51,9 +52,10 @@ let vs = `
         var cMapIndex:i32; 
         var level:f32 = in.position.w;
         var radius:f32 = 3.0* pow(0.5, level);
+        var intensity:f32 = in.intensity;
         radius = max(radius, 1.0);
-        var position:vec3<f32> = in.position.xyz - vec3(params.x_min, params.y_min, params.z_min);
-        var factor = in.color.x/params.max_Intensity;
+        var position:vec3<f32> = in.position.xyz - vec3(params.x_min, params.y_min, params.z_min) - 0.5*vec3(params.width_x, params.width_y, params.width_z) ;
+        var factor = intensity/params.max_Intensity;
         if(params.current_Axis == 2.0){
             cMapIndex = i32((abs(in.position.z - params.z_min)/params.width_z) *19);
             let mappedColor = getCmapped(cMapIndex);
@@ -61,7 +63,7 @@ let vs = `
             if(cMapIndex < 0){
                 out.color = vec4(1.0, 0.0, 0.0, 1.0);
             }
-            out.color = vec4(out.color.x*factor, out.color.y*factor, out.color.z*factor, factor);
+            out.color = vec4(out.color.x, out.color.y, out.color.z, 0.8);
 
         }
         else if(params.current_Axis == 1.0){

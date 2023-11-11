@@ -134,6 +134,7 @@ async function updateMaxIntensity() {
   const copyEncoder = device.createCommandEncoder();
   copyEncoder.copyBufferToBuffer(stagingBuffer, 28, paramsBuffer, 28, 4);
   device.queue.submit([copyEncoder.finish()]);
+  console.log("params is now", param)
 }
 
 async function updateAxis() {
@@ -193,6 +194,7 @@ async function init() {
       abortController.abort();
     }
     abortController = new AbortController();
+    console.log(camera.eyePos())
     throttleTreeTravel(projView, abortController.signal);
   });
 }
@@ -221,6 +223,12 @@ async function intRenderPipeline() {
     format: "float32x3",
   };
 
+  let intensityAttribute_Desc = {
+    shaderLocation: 2,
+    offset: 0,
+    format: "float32"
+  }
+
   let Vertex_Shader_Descriptor = {
     module: vs_module,
     entryPoint: "main",
@@ -235,6 +243,11 @@ async function intRenderPipeline() {
         stepMode: "instance",
         attributes: [colorAttribute_Desc],
       },
+      {
+        arrayStride: 4,
+        stepMode: "instance",
+        attributes: [intensityAttribute_Desc]
+      }
     ],
   };
 
@@ -305,6 +318,7 @@ function initUniform(cam, projMatrix, params) {
   let mapArray_params = new Float32Array(paramsBuffer.getMappedRange());
   mapArray_params.set(params);
   paramsBuffer.unmap();
+  console.log("parameter is", params)
 
   levelBuffer = device.createBuffer({
     size: 4,
@@ -543,6 +557,7 @@ function render(timestamp) {
     // console.log(bufferMap[key].position);
     renderPass.setVertexBuffer(0, bufferMap[key].position);
     renderPass.setVertexBuffer(1, bufferMap[key].color);
+    renderPass.setVertexBuffer(2, bufferMap[key].intensity);
     numPoints = +bufferMap[key].position.label / 4;
     renderPass.draw(4, numPoints, 0, 0);
   }

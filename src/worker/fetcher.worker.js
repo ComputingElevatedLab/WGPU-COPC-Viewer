@@ -21,6 +21,7 @@ let x_min,
   scaleZ,
   level;
 let positions = [];
+let intensities = []
 // const filename = process.env.filename;
 const filename = process.env.filename;
 
@@ -35,12 +36,12 @@ const readPoints = (id, getters) => {
   }
 
   positions.push(returnPoint[0], returnPoint[1], returnPoint[2]);
-  // console.log("intensity is", returnPoint[3]);
-  const vx = returnPoint[3];
-  if (vx > maxIntensity) {
-    maxIntensity = vx;
+  const intensity = returnPoint[3];
+  if (intensity > maxIntensity) {
+    maxIntensity = intensity;
   }
-  color.setRGB(returnPoint[3], returnPoint[4], returnPoint[5]);
+  color.setRGB(returnPoint[4], returnPoint[5], returnPoint[6]);
+  intensities.push(intensity)
   colors.push(color.r, color.g, color.b);
   firstTime = false;
 };
@@ -70,11 +71,11 @@ async function loadData(nodes, pages, copc, myRoot, pointCount) {
   // console.log(copc, myRoot);
   const view = await Copc.loadPointDataView(filename, copc, myRoot);
   // let getters = ["X", "Y", "Z", "Intensity"].map(view.getter);
-  let getters = ["X", "Y", "Z", "Red", "Green", "Blue"].map(view.getter);
+  let getters = ["X", "Y", "Z", "Intensity", "Red", "Green", "Blue"].map(view.getter);
   for (let j = 0; j < pointCount; j += 1) {
     readPoints(j, getters);
   }
-  postMessage([positions, colors, [minZ, maxZ, maxIntensity, level]]);
+  postMessage([positions, colors, [minZ, maxZ, maxIntensity, level], intensities]);
 }
 
 load();
