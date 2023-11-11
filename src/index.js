@@ -133,6 +133,7 @@ function createWorker(data1, data2) {
       } else {
         workerCount += 1;
         let position = postMessageRes[0];
+        console.log("position is", position)
         let color = postMessageRes[1];
         let [minZ, maxZ, maxIntensity, dataLevel] = postMessageRes[2];
         let intensityArray = postMessageRes[3]
@@ -611,12 +612,9 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
 }
 
 async function createCameraProj() {
-  const _width = canvas.width;
-  const _height = canvas.height;
-
-  camera = new ArcballCamera([500, 500, 1000], [0, 0, 0], [0, 1, 0], 500, [
-    _width,
-    _height,
+  camera = new ArcballCamera([0, 0, 500], [0, 0, 0], [0, 1, 0], 500, [
+    window.innerWidth,
+    window.innerHeight,
   ]);
 
   proj = mat4.perspective(
