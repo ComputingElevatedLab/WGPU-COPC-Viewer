@@ -63,6 +63,8 @@ let vs = `
             if(cMapIndex < 0){
                 out.color = vec4(1.0, 0.0, 0.0, 1.0);
             }
+            out.color = vec4(out.color.x, out.color.y, out.color.z, factor);
+
         }
         else if(params.current_Axis == 1.0){
             cMapIndex = i32(1.25*(abs(in.position.y - params.y_min)/params.width_y) *19);
