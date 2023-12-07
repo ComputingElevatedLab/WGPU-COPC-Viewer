@@ -75,7 +75,7 @@ function isRendered(
   let pixel_size = (2 * Math.tan(fovRADIAN / 2.0) * distance) / screenHeight;
   let projectedRadius =
     (radius * screenHeight) / (distance * (2 * Math.tan(fovRADIAN / 2.0)));
-  return Math.abs(projectedRadius) > 60;
+  return Math.abs(projectedRadius) > 80;
 }
 
 function traverseTreeWrapper(
@@ -90,6 +90,7 @@ function traverseTreeWrapper(
   projViewMatrix
 ) {
   let cameraPosition = controls.object.position.toArray();
+  console.log(cameraPosition)
   let width_x_world = width[0];
   nodeToPrefetch = [];
   function traverseTree(root, center_x, center_y, center_z, width) {

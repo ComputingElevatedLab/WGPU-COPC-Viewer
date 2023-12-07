@@ -585,28 +585,31 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
 
 async function createCameraProj() {
   camera = new THREE.PerspectiveCamera(
-    90,
+    50,
     canvas.width / canvas.height,
     0.1,
-    20000
+    4000
   );
-  camera.position.set(0, 0, 2500);
-  camera.up.set(0, 0, 1);
+  camera.up.set(0, 0, 1 );
+  camera.position.set(0, 1000, 1000)
+  // camera.position.set( 1446.6944661802368, -1721.55051389683 , 444.2788);
+  // camera.rotation.set(0.6403667747403355, 0.34, 0.42);
   camera.updateProjectionMatrix();
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new OrbitControls(camera, canvas);
+  // controls.target.set(900, -665, -710);
+
   controls.enableDamping = true;
   controls.dampingFactor = 0.5;
   // controls.minAzimuthAngle = 0;
   // controls.maxAzimuthAngle = 0.25 * Math.PI;
   // controls.minPolarAngle = 0;
   // controls.maxPolarAngle = Math.PI;
-  controls.rotateSpeed = 2;
-  controls.zoomSpeed = 2;
-  controls.panSpeed = 5;
+  // controls.rotateSpeed = 2;
+  controls.zoomSpeed = 1;
+  controls.panSpeed = 2;
   // controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.5;
+  // controls.autoRotateSpeed = 0.5;
   controls.update();
 
   // camera = new ArcballCamera([100, -100, 100], [0, 0, 0], [0, 1, 0], 300, [
@@ -616,7 +619,7 @@ async function createCameraProj() {
 
   proj = mat4.perspective(
     mat4.create(),
-    (90 * Math.PI) / 180.0,
+    (50 * Math.PI) / 180.0,
     canvas.width / canvas.height,
     0.1,
     8000

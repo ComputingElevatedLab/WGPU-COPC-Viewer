@@ -67,10 +67,13 @@ let vs = `
         else if(params.current_Axis == 1.0){
             cMapIndex = i32(1.25*(abs(in.position.y - params.y_min)/params.width_y) *19);
             out.color = getCmapped(cMapIndex);
+            out.color = vec4(out.color.x, out.color.y, out.color.z, 1.0)*factor;
+
         }
         else if(params.current_Axis == 0.0){
             cMapIndex = i32(1.25*(abs(in.position.x - params.x_min)/params.width_x) *19);
             out.color = getCmapped(cMapIndex);
+            out.color = vec4(out.color.x, out.color.y, out.color.z, 1.0)*factor;
         }
         else{
             out.color = vec4(in.color.x/255.0, in.color.y/225.0, in.color.z/255.0, 1.0);
@@ -83,7 +86,6 @@ let vs = `
         //     out.color = vec4(0.0, 1.0, 0.0, 1.0);
         // }
         position = position + vec3<f32>(radius*direction[vertexIndex], 0.0);
-        position.z = position.z;
         out.position = MVP_Matrix* vec4<f32>(position, 1.0);
         return out;
     }

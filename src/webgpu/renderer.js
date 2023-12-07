@@ -160,13 +160,14 @@ async function init() {
   // device.lost.then(recoverFromDeviceLoss);
 
   canvas = document.getElementById("screen-canvas");
+  canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
+  canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
+
   context = canvas.getContext("webgpu");
   if (!context) {
     console.error("coould not get context from the canvas");
     return;
   }
-  canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
-  canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
 
   swapChainFormat = navigator.gpu.getPreferredCanvasFormat();
   configureSwapChain(device);
@@ -182,7 +183,6 @@ async function init() {
 
   canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
-      let cameraPosition = camera.eyePos();
       throttleTreeTravel(projView);
     }
   });
@@ -358,8 +358,9 @@ function initUniform(cam, projMatrix, params) {
     size: 16 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
+
   let viewMatrix = camera.matrixWorldInverse.elements
-  projView = mat4.mul(projView, proj, viewMatrix);
+  projView = mat4.mul(projView, viewMatrix, proj);
   return projView;
 }
 
@@ -450,7 +451,7 @@ async function update(timestamp) {
       mat4.lookAt(view, position, target, up);
     }
     const view_matrix = camera.matrixWorldInverse;
-    mat4.multiply(worldViewProj, proj, view_matrix);
+    mat4.multiply(worldViewProj, view_matrix, proj);
   }
 }
 
@@ -489,7 +490,9 @@ function render(timestamp) {
   commandEncoder = device.createCommandEncoder();
   //  this is not helpful for tree traversal so model matrix rotation is removed for now
   let viewMatrix = camera.matrixWorldInverse.elements;
+  // console.log(controls.object.position, controls.object.rotation, controls.target )
   projView = mat4.mul(projView, proj, viewMatrix);
+  controls.update();
   // update(timestamp);
   encodedCommand();
 
