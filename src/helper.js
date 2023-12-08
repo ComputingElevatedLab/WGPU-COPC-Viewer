@@ -44,4 +44,16 @@ function fillMidNodes(tree) {
   return passingValue;
 }
 
-export { fillArray, fillMidNodes };
+function updateHtmlUI(nodeNotFoundInBuffer, nodeFoundInBuffer, nodeFoundInLRU, nodeFoundInPersistent, nodeToFetch){
+  let stats_text = `Among total nodes needed ${nodeFoundInBuffer + nodeNotFoundInBuffer}\b 
+                    nodes found in GPU Buffer: ${nodeFoundInBuffer} \b
+                    ---------------------------------------------------- 
+                    nodes need to be loaded ${nodeNotFoundInBuffer}\b
+                    \b
+                    nodes found in LRU Cache: ${nodeFoundInLRU} \b
+                    nodes found in Persistent memory: ${nodeFoundInPersistent} \b
+                    nodes that were fetched from host: ${nodeToFetch}    `
+  document.getElementById("stats-div").innerText = stats_text
+}
+
+export { fillArray, fillMidNodes, updateHtmlUI };

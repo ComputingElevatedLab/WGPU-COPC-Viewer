@@ -59,3 +59,11 @@ option {
   background: none;
   font-size: 14px;
 }
+
+#stats-div{
+  position: absolute;
+  bottom: 100px; 
+  right: 50px;
+  background-color: aliceblue;
+  padding: 20px;
+}

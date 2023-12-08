@@ -31,9 +31,11 @@ import {
 } from "./private_origin/cache_manager";
 
 import "./styles/main.css";
-import { fillArray, fillMidNodes } from "./helper";
+import { fillArray, fillMidNodes, updateHtmlUI } from "./helper";
 import { cache } from "./lru-cache/index";
 
+let loadedFromCache = 0; 
+let fetchedFromsource = 0;
 const bytes = new Float32Array(59);
 const source_file_name = process.env.filename.split("/").pop();
 let state_meta = {};
@@ -317,7 +319,11 @@ const syncThread_Prefetch = async () => {
   });
 };
 
+
+
 async function filterkeyCountMap_Prefetch(keyMap) {
+  
+
   let afterCheckingCache = [];
 
   for (let i = 0; i < keyMap.length; i += 2) {
@@ -348,6 +354,14 @@ async function filterkeyCountMap_Prefetch(keyMap) {
 }
 
 async function filterkeyCountMap(keyMap) {
+
+  // computing node fetch counts
+  let nodeNotFoundInBuffer = 0;
+  let nodeFoundInBuffer = 0;
+  let nodeFoundInLRU = 0;
+  let nodeFoundInPersistent = 0;
+  let nodeToFetch = 0;
+
   let newKeyMap = [];
   let newBufferMap = {};
   console.log("asked for", keyMap);
@@ -367,8 +381,10 @@ async function filterkeyCountMap(keyMap) {
   for (let i = 0; i < keyMap.length; i += 2) {
     if (!(keyMap[i] in bufferMap)) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
+      nodeNotFoundInBuffer++
     } else {
       // console.log(`found ${keyMap[i]} in existing buffer`);
+      nodeFoundInBuffer++;
       let maxIntensity = bufferMap[keyMap[i]].maxIntensity;
       newBufferMap[keyMap[i]] = {
         position: bufferMap[keyMap[i]].position,
@@ -393,6 +409,7 @@ async function filterkeyCountMap(keyMap) {
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let cachedResult = cache.get(newKeyMap[i]);
     if (cachedResult) {
+      nodeFoundInLRU++
       // console.log(`found ${newKeyMap[i]} in cache`);
       cachedResult = JSON.parse(cachedResult);
       pers_cache = get_inCache(pers_cache, newKeyMap[i]);
@@ -425,6 +442,7 @@ async function filterkeyCountMap(keyMap) {
     if (Exist) {
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
+      nodeFoundInPersistent++;
       let [positionBuffer, colorBuffer] = createBuffer(
         data.position,
         data.color
@@ -445,6 +463,7 @@ async function filterkeyCountMap(keyMap) {
         count: 1,
         date: Date.now(),
       });
+      nodeToFetch++
     }
   }
   const endTime3 = performance.now();
@@ -461,6 +480,8 @@ async function filterkeyCountMap(keyMap) {
   }
   bufferMap = newBufferMap;
   // console.log(`to fetch this ${filteredElements}`);
+
+  updateHtmlUI(nodeNotFoundInBuffer, nodeFoundInBuffer, nodeFoundInLRU, nodeFoundInPersistent, nodeToFetch)
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
