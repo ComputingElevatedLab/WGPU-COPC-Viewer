@@ -564,6 +564,7 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
       m += 2;
       if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
         await syncThread();
+        console.log(controllerSignal)
         if (controllerSignal && controllerSignal.aborted) {
           console.log("i am aborted now from fetching thread");
           return;
