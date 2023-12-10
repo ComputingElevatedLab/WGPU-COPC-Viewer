@@ -37,7 +37,7 @@ let keyMap = {
 let debounceTimeOutId = null;
 let colorMapBuffer;
 let paramsBuffer;
-let currentAxis = 2;
+let currentAxis = 3;
 let param;
 let abortController = null;
 let levelBuffer;
