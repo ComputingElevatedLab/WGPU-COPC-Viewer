@@ -691,7 +691,7 @@ async function loadCOPC() {
 }
 
 (async () => {
-  await clear();
+  // await clear();
   const start6 = performance.now();
   await create_P_Meta_Cache();
   const end6 = performance.now();
