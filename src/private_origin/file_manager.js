@@ -64,7 +64,6 @@ let clear = async () => {
   const fileNames = await root.keys();
   let x = await fileNames.next();
   while (!x.done) {
-    console.log("hello")
     let fileName = x.value;
     const fileHandle = await root.getFileHandle(fileName);
     await fileHandle.remove();
@@ -138,7 +137,6 @@ let doesExist = async (fileName) => {
     } 
   } catch (error) {
     if (error.name === "NotFoundError") {
-      console.log("file not found");
       return [false, null];
     } else {
       console.error("Error checking if file exists:", error);

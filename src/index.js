@@ -364,7 +364,6 @@ async function filterkeyCountMap(keyMap) {
 
   let newKeyMap = [];
   let newBufferMap = {};
-  console.log("asked for", keyMap);
   for (const key in toDeleteMap) {
     toDeleteMap[key].position.destroy();
     toDeleteMap[key].color.destroy();
@@ -399,7 +398,7 @@ async function filterkeyCountMap(keyMap) {
     }
   }
   const endTime1 = performance.now();
-  console.log(`Time taken: ${endTime1 - startTime1}ms`);
+  // console.log(`Time taken: ${endTime1 - startTime1}ms`);
 
   // --------------------- these are new ones
   // are they in non-persistence cache?
@@ -431,7 +430,7 @@ async function filterkeyCountMap(keyMap) {
     }
   }
   const endTime2 = performance.now();
-  console.log(`Time taken: ${endTime2 - startTime2}ms`);
+  // console.log(`Time taken: ${endTime2 - startTime2}ms`);
 
   const startTime3 = performance.now();
   let filteredElements = [];
@@ -440,6 +439,7 @@ async function filterkeyCountMap(keyMap) {
       `${source_file_name}-${afterCheckingCache[i]}`
     );
     if (Exist) {
+      console.log("found in POFS")
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
       nodeFoundInPersistent++;
@@ -467,7 +467,7 @@ async function filterkeyCountMap(keyMap) {
     }
   }
   const endTime3 = performance.now();
-  console.log(`Time taken: ${endTime3 - startTime3}ms`);
+  // console.log(`Time taken: ${endTime3 - startTime3}ms`);
 
   await throttled_Update_Pers_Cache(mapIntoJSON(cache));
   //-------------------------------------------------------------------------
@@ -545,7 +545,7 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
     projectionViewMatrix
   );
   const endTime4 = performance.now();
-  console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
+  // console.log(`Time taken to traverse tree: ${endTime4 - startTime4}ms`);
 
   keyCountMap = await filterkeyCountMap(keyCountMap);
   prefetch_keyCountMap = await filterkeyCountMap_Prefetch(nodeToPrefetch);
@@ -564,9 +564,9 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
       m += 2;
       if (doneCount % MAX_WORKERS == 0 || doneCount == totalNodes) {
         await syncThread();
-        console.log(controllerSignal)
+        // console.log(controllerSignal)
         if (controllerSignal && controllerSignal.aborted) {
-          console.log("i am aborted now from fetching thread");
+          // console.log("i am aborted now from fetching thread");
           return;
         }
       }
@@ -598,7 +598,7 @@ async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
   //   }
   // }
 
-  console.log("it finished at", clock.getDelta());
+  // console.log("it finished at", clock.getDelta());
 
   // find sibling
   // let siblings = findSiblings(keyCountMap);
@@ -670,11 +670,11 @@ async function loadCOPC() {
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
-  console.log(widthx, widthy, widthz);
+  // console.log(widthx, widthy, widthz);
   // console.log(z_max, z_min, widthz);
   // for new COPC file widthz is 50, z_min is fine but width is wrong
 
-  console.log("minimum z is", z_min, "z-width is", widthz, copc);
+  // console.log("minimum z is", z_min, "z-width is", widthz, copc);
 
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
   center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) ;
@@ -692,47 +692,47 @@ async function loadCOPC() {
 
 (async () => {
   // await clear();
-  const start6 = performance.now();
+  // const start6 = performance.now();
   await create_P_Meta_Cache();
-  const end6 = performance.now();
-  console.log(`Time taken to create meta cache: ${end6 - start6}ms`);
+  // const end6 = performance.now();
+  // console.log(`Time taken to create meta cache: ${end6 - start6}ms`);
 
-  const start7 = performance.now();
+  // const start7 = performance.now();
   pers_cache = await p_cache();
-  const end7 = performance.now();
-  console.log(`Time taken to make LRU meta cache: ${end7 - start7}ms`);
+  // const end7 = performance.now();
+  // console.log(`Time taken to make LRU meta cache: ${end7 - start7}ms`);
   // console.log("cache created successfully");
 
-  const start8 = performance.now();
+  // const start8 = performance.now();
   await createCameraProj();
-  const end8 = performance.now();
-  console.log(`Time taken to create camera: ${end8 - start8}ms`);
+  // const end8 = performance.now();
+  // console.log(`Time taken to create camera: ${end8 - start8}ms`);
   // console.log("file reading start");
 
-  const start9 = performance.now();
+  // const start9 = performance.now();
   await loadCOPC();
-  const end9 = performance.now();
-  console.log(`Time taken to load COPC file: ${end9 - start9}ms`);
+  // const end9 = performance.now();
+  // console.log(`Time taken to load COPC file: ${end9 - start9}ms`);
   // console.log("initialize the uniform buffers");
 
-  const start10 = performance.now();
+  // const start10 = performance.now();
   let projViewMatrix = await stages(camera, proj, params);
-  const end10 = performance.now();
-  console.log(`Time taken to do initial rendering setup: ${end10 - start10}ms`);
+  // const end10 = performance.now();
+  // console.log(`Time taken to do initial rendering setup: ${end10 - start10}ms`);
   // console.log("data loading start");
 
-  const start11 = performance.now();
+  // const start11 = performance.now();
   await retrivePoints(projViewMatrix);
-  const end11 = performance.now();
-  console.log(
-    `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`
-  );
+  // const end11 = performance.now();
+  // console.log(
+  //   `Time taken to retrive needed nodes from tree: ${end11 - start11}ms`
+  // );
   // console.log("data loaded");
 
-  const start12 = performance.now();
+  // const start12 = performance.now();
   await renderWrapper();
-  const end12 = performance.now();
-  console.log(`Time taken to render: ${end12 - start12}ms`);
+  // const end12 = performance.now();
+  // console.log(`Time taken to render: ${end12 - start12}ms`);
   // console.log("render done");
 })();
 

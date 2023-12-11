@@ -55,7 +55,7 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 1000);
+let throttleTreeTravel = throttle(retrivePoints, 1500);
 
 // ------------------------------- camera itenary
 
@@ -83,7 +83,6 @@ function moveCamera() {
 let count = 0;
 function itenaryStart(fn) {
   fn().then((response) => {
-    console.log("done1");
     count++;
     if (count < 5) setTimeout(() => itenaryStart(fn), 10000);
   });
@@ -470,7 +469,6 @@ async function stages(camera, proj, params) {
 // i guess i am not using this
 
 async function renderStages(position, color) {
-  console.log(" i am insider another render");
   numPoints = position.length / 3;
   positions = position;
   colors = color;
