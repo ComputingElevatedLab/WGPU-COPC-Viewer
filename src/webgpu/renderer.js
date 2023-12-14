@@ -55,7 +55,7 @@ function throttle(callback, interval) {
   };
 }
 
-let throttleTreeTravel = throttle(retrivePoints, 1500);
+let throttleTreeTravel = throttle(retrivePoints, 2000);
 
 // ------------------------------- camera itenary
 
@@ -182,11 +182,7 @@ async function init() {
 
   canvas.addEventListener("mousemove", () => {
     if (keyMap["isDown"] == true) {
-      if (abortController) {
-        abortController.abort();
-      }
-      abortController = new AbortController();
-      throttleTreeTravel(projView, abortController.signal);
+      throttleTreeTravel(projView);
     }
   });
 
