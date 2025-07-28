@@ -39,6 +39,12 @@ let fetchedFromsource = 0;
 const bytes = new Float32Array(59);
 const source_file_name = process.env.filename.split("/").pop();
 let state_meta = {};
+let currentJobToken = 0;
+
+function startNewCOPCJob() {
+  currentJobToken++;
+  return currentJobToken;
+}
 
 // ------------------- used to clear intital POFS that got created while writing code ---------------
 // (async () => {
@@ -69,6 +75,8 @@ const MAX_WORKERS = navigator.hardwareConcurrency - 1;
 let promises = [];
 let nodePages, nodePagesString;
 let pagesString;
+let pages;
+let copc;
 let camera, proj;
 let copcString;
 let x_min,
@@ -274,11 +282,11 @@ const syncThread = async () => {
       let data_json = {
         position: data[0],
         color: data[1],
-        maxIntensity: data[3]
+        maxIntensity: data[3],
       };
 
-      let data_json_stringify = JSON.stringify(data_json);
-      await write(`${source_file_name}-${fileName}`, data_json_stringify);
+      await write(`${source_file_name}-${fileName}`, data[0], data[1], data[3]);
+
       state_meta[fileName] = {
         count: 1,
         date: new Date(),
@@ -289,7 +297,7 @@ const syncThread = async () => {
       bufferMap[data[2]] = {
         position: positionBuffer,
         color: colorBuffer,
-        maxIntensity: data[3]
+        maxIntensity: data[3],
       };
     }
     // console.log(bufferMap);
@@ -302,14 +310,8 @@ const syncThread_Prefetch = async () => {
     for (let i = 0, _length = response.length; i < _length; i++) {
       let data = response[i];
       let fileName = data[2];
-      
-      let data_json = {
-        position: data[0],
-        color: data[1],
-        maxIntensity: data[3]
-      };
-      let data_json_stringify = JSON.stringify(data_json);
-      await write(`${source_file_name}-${fileName}`, data_json_stringify);
+
+      await write(`${source_file_name}-${fileName}`, data[0], data[1], data[3]);
       state_meta[fileName] = {
         count: 1,
         date: new Date(),
@@ -319,11 +321,7 @@ const syncThread_Prefetch = async () => {
   });
 };
 
-
-
 async function filterkeyCountMap_Prefetch(keyMap) {
-  
-
   let afterCheckingCache = [];
 
   for (let i = 0; i < keyMap.length; i += 2) {
@@ -335,8 +333,13 @@ async function filterkeyCountMap_Prefetch(keyMap) {
 
   let filteredElements = [];
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
+    let pointCount = afterCheckingCache[i + 1];
+    let posLen = pointCount * 3;
+    let colLen = pointCount * 3;
     let [Exist, data] = await doesExist(
-      `${source_file_name}-${afterCheckingCache[i]}`
+      `${source_file_name}-${afterCheckingCache[i]}`,
+      posLen,
+      colLen
     );
     if (Exist) {
       cache.set(afterCheckingCache[i], JSON.stringify(data));
@@ -354,7 +357,6 @@ async function filterkeyCountMap_Prefetch(keyMap) {
 }
 
 async function filterkeyCountMap(keyMap) {
-
   // computing node fetch counts
   let nodeNotFoundInBuffer = 0;
   let nodeFoundInBuffer = 0;
@@ -380,7 +382,7 @@ async function filterkeyCountMap(keyMap) {
   for (let i = 0; i < keyMap.length; i += 2) {
     if (!(keyMap[i] in bufferMap)) {
       newKeyMap.push(keyMap[i], keyMap[i + 1]);
-      nodeNotFoundInBuffer++
+      nodeNotFoundInBuffer++;
     } else {
       // console.log(`found ${keyMap[i]} in existing buffer`);
       nodeFoundInBuffer++;
@@ -388,7 +390,7 @@ async function filterkeyCountMap(keyMap) {
       newBufferMap[keyMap[i]] = {
         position: bufferMap[keyMap[i]].position,
         color: bufferMap[keyMap[i]].color,
-        maxIntensity: maxIntensity
+        maxIntensity: maxIntensity,
       };
       if (maxIntensity > global_max_intensity) {
         global_max_intensity = maxIntensity;
@@ -408,7 +410,7 @@ async function filterkeyCountMap(keyMap) {
   for (let i = 0; i < newKeyMap.length; i += 2) {
     let cachedResult = cache.get(newKeyMap[i]);
     if (cachedResult) {
-      nodeFoundInLRU++
+      nodeFoundInLRU++;
       // console.log(`found ${newKeyMap[i]} in cache`);
       cachedResult = JSON.parse(cachedResult);
       pers_cache = get_inCache(pers_cache, newKeyMap[i]);
@@ -416,13 +418,13 @@ async function filterkeyCountMap(keyMap) {
         cachedResult.position,
         cachedResult.color
       );
-      const maxIntensity = cachedResult.maxIntensity
+      const maxIntensity = cachedResult.maxIntensity;
       newBufferMap[newKeyMap[i]] = {
         position: positionBuffer,
         color: colorBuffer,
-        maxIntensity: maxIntensity
+        maxIntensity: maxIntensity,
       };
-      if(maxIntensity > global_max_intensity){
+      if (maxIntensity > global_max_intensity) {
         global_max_intensity = maxIntensity;
       }
     } else {
@@ -435,11 +437,16 @@ async function filterkeyCountMap(keyMap) {
   const startTime3 = performance.now();
   let filteredElements = [];
   for (let i = 0; i < afterCheckingCache.length; i += 2) {
+    let pointCount = afterCheckingCache[i + 1];
+    let posLen = pointCount * 3;
+    let colLen = pointCount * 3;
     let [Exist, data] = await doesExist(
-      `${source_file_name}-${afterCheckingCache[i]}`
+      `${source_file_name}-${afterCheckingCache[i]}`,
+      posLen,
+      colLen
     );
     if (Exist) {
-      console.log("found in POFS")
+      console.log("found in POFS");
       // console.log(`found ${afterCheckingCache[i]} in POFS`);
       // let data = await read(afterCheckingCache[i]);
       nodeFoundInPersistent++;
@@ -450,9 +457,9 @@ async function filterkeyCountMap(keyMap) {
       newBufferMap[afterCheckingCache[i]] = {
         position: positionBuffer,
         color: colorBuffer,
-        maxIntensity: data.maxIntensity
+        maxIntensity: data.maxIntensity,
       };
-      if(data.maxIntensity > global_max_intensity){
+      if (data.maxIntensity > global_max_intensity) {
         global_max_intensity = data.maxIntensity;
       }
       cache.set(afterCheckingCache[i], JSON.stringify(data));
@@ -463,7 +470,7 @@ async function filterkeyCountMap(keyMap) {
         count: 1,
         date: Date.now(),
       });
-      nodeToFetch++
+      nodeToFetch++;
     }
   }
   const endTime3 = performance.now();
@@ -481,7 +488,13 @@ async function filterkeyCountMap(keyMap) {
   bufferMap = newBufferMap;
   // console.log(`to fetch this ${filteredElements}`);
 
-  updateHtmlUI(nodeNotFoundInBuffer, nodeFoundInBuffer, nodeFoundInLRU, nodeFoundInPersistent, nodeToFetch)
+  updateHtmlUI(
+    nodeNotFoundInBuffer,
+    nodeFoundInBuffer,
+    nodeFoundInLRU,
+    nodeFoundInPersistent,
+    nodeToFetch
+  );
   return filteredElements;
   //filter and delete unwanted bufferMap
 }
@@ -531,8 +544,13 @@ function findSiblings(keyCountMap) {
   return nodeKeyCount;
 }
 
-async function retrivePoints(projectionViewMatrix, controllerSignal = null) {
+async function retrivePoints(
+  projectionViewMatrix,
+  controllerSignal = null,
+  jobToken = null
+) {
   const startTime4 = performance.now();
+  // if (jobToken !== currentJobToken) return;
   let [keyCountMap, nodeToPrefetch] = traverseTreeWrapper(
     nodePages,
     [0, 0, 0, 0],
@@ -612,8 +630,8 @@ async function createCameraProj() {
     0.1,
     4000
   );
-  camera.up.set(0, 0, 1 );
-  camera.position.set(0, 1000, 1000)
+  camera.up.set(0, 0, 1);
+  camera.position.set(0, 1000, 1000);
   // camera.position.set( 1446.6944661802368, -1721.55051389683 , 444.2788);
   // camera.rotation.set(0.6403667747403355, 0.34, 0.42);
   camera.updateProjectionMatrix();
@@ -650,18 +668,17 @@ async function createCameraProj() {
 
 async function loadCOPC() {
   clock.getDelta();
-  // https://viewer.copc.io/?copc=https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz
-  // https://github.com/PDAL/data/blob/master/autzen/autzen-classified.copc.laz
-  // let filename = "https://s3.amazonaws.com/data.entwine.io/millsite.copc.laz";
   const filename = process.env.filename;
-  const copc = await Copc.create(filename);
-  console.log("file is", copc)
+  copc = await Copc.create(filename);
+  console.log("file is", copc);
   scaleFactor = copc.header.scale;
-  scaleFactor = [1.0, 1.0, 1.0]
+  scaleFactor = [1.0, 1.0, 1.0];
   copcString = JSON.stringify(copc);
-  // scale = copc.header.scale[0];
-  [x_min, y_min, z_min, x_max, y_max, z_max] = [...copc.header.min, ...copc.header.max];
-  x_min *= scaleFactor[0]; 
+  [x_min, y_min, z_min, x_max, y_max, z_max] = [
+    ...copc.header.min,
+    ...copc.header.max,
+  ];
+  x_min *= scaleFactor[0];
   x_max *= scaleFactor[0];
   y_min *= scaleFactor[1];
   y_max *= scaleFactor[1];
@@ -670,24 +687,135 @@ async function loadCOPC() {
   widthx = Math.abs(x_max - x_min);
   widthy = Math.abs(y_max - y_min);
   widthz = Math.abs(z_max - z_min);
-  // console.log(widthx, widthy, widthz);
-  // console.log(z_max, z_min, widthz);
-  // for new COPC file widthz is 50, z_min is fine but width is wrong
-
-  // console.log("minimum z is", z_min, "z-width is", widthz, copc);
-
   params = [widthx, widthy, widthz, x_min, y_min, z_min];
-  center_x = ((x_min + x_max) / 2 - x_min - 0.5 * widthx) ;
-  center_y = ((y_min + y_max) / 2 - y_min - 0.5 * widthy);
-  center_z = ((z_min + z_max) / 2 - z_min - 0.5 * widthz);
-  // center is moved to origin and we dont need to do this but for sake for checking the cordinate system, i am doing this
-  const { nodes: nodePages1, pages: pages } = await Copc.loadHierarchyPage(
+  center_x = (x_min + x_max) / 2 - x_min - 0.5 * widthx;
+  center_y = (y_min + y_max) / 2 - y_min - 0.5 * widthy;
+  center_z = (z_min + z_max) / 2 - z_min - 0.5 * widthz;
+  const { nodes: nodePages1, pages: pages1 } = await Copc.loadHierarchyPage(
     filename,
     copc.info.rootHierarchyPage
   );
   nodePages = nodePages1;
   nodePagesString = JSON.stringify(nodePages);
+  pages = pages1;
   pagesString = JSON.stringify(pages);
+
+  // --- Performance test for one node ---
+  let testKey = Object.keys(nodePages).filter(
+    (k) =>
+      nodePages[k].pointCount > 0 && nodePages[k].pointDataOffset !== undefined
+  );
+  if (!testKey) {
+    console.error("No suitable node found for timing test.");
+    return;
+  }
+  console.log(`Testing node: ${testKey}`);
+  // get testKey with highest number of points
+  const highestPointKey = testKey.reduce((maxKey, k) =>
+    nodePages[k].pointCount > nodePages[maxKey].pointCount ? k : maxKey
+  );
+  console.log(`Highest point node: ${highestPointKey}`);
+
+  testKey = highestPointKey;
+  const pointCount = nodePages[testKey].pointCount;
+  const posLen = pointCount * 3;
+  const colLen = pointCount * 3;
+  const pofsFilename = `${source_file_name}-${testKey}`;
+
+  // 1. Worker timing
+  const extraParams = [
+    x_min,
+    y_min,
+    z_min,
+    widthx,
+    widthy,
+    widthz,
+    scaleFactor[0],
+    scaleFactor[1],
+    scaleFactor[2],
+    nodePages[testKey].level,
+  ];
+  const tWorkerStart = performance.now();
+  const workerResult = await new Promise((resolve) => {
+    const worker = new Worker("./worker/fetcher.worker.js", { type: "module" });
+    worker.onmessage = (event) => {
+      if (Array.isArray(event.data) && event.data.length === 3) {
+        resolve(event.data);
+        worker.terminate();
+      }
+    };
+    worker.postMessage([
+      JSON.stringify(nodePages),
+      JSON.stringify(pages),
+      JSON.stringify(copc),
+      testKey,
+      pointCount,
+      extraParams,
+    ]);
+  });
+  const tWorkerEnd = performance.now();
+  console.log(
+    `Worker: ${pointCount} points fetched in ${(
+      tWorkerEnd - tWorkerStart
+    ).toFixed(2)} ms`
+  );
+
+  const tWriteStart = performance.now();
+  await write(
+    pofsFilename,
+    workerResult[0],
+    workerResult[1],
+    workerResult[2][2]
+  );
+  const tWriteEnd = performance.now();
+  console.log(
+    `POFS: Wrote ${pointCount} points in ${(tWriteEnd - tWriteStart).toFixed(
+      2
+    )} ms`
+  );
+
+  const tPOFSStart = performance.now();
+  let [Exist2, data2] = await doesExist(pofsFilename, posLen, colLen);
+  const tPOFSEnd = performance.now();
+  if (Exist2) {
+    console.log(
+      `POFS: ${pointCount} points read in ${(tPOFSEnd - tPOFSStart).toFixed(
+        2
+      )} ms`
+    );
+    // Compare positions, colors, and maxIntensity
+    const workerPositions = workerResult[0].slice(0, 10);
+    const pofsPositions = data2.position.slice(0, 10);
+    const workerColors = workerResult[1].slice(0, 10);
+    const pofsColors = data2.color.slice(0, 10);
+    const workerMaxIntensity = workerResult[2][2];
+    const pofsMaxIntensity = data2.maxIntensity;
+
+    const positionsMatch =
+      JSON.stringify(workerResult[0].map(v => v.toFixed(0))) === JSON.stringify(data2.position.map(v => v.toFixed(0)));
+    const colorsMatch =
+      JSON.stringify(workerResult[1].map(v => v.toFixed(0))) === JSON.stringify(data2.color.map(v => v.toFixed(0)));
+    const intensityMatch = workerMaxIntensity === pofsMaxIntensity;
+
+    console.log("First 10 positions from worker:", workerPositions);
+    console.log("First 10 positions from POFS:", pofsPositions);
+    console.log("First 10 colors from worker:", workerColors);
+    console.log("First 10 colors from POFS:", pofsColors);
+    console.log("Worker maxIntensity:", workerMaxIntensity);
+    console.log("POFS maxIntensity:", pofsMaxIntensity);
+
+    console.log("Positions match:", positionsMatch);
+    console.log("Colors match:", colorsMatch);
+    console.log("Max intensity match:", intensityMatch);
+
+    if (!positionsMatch || !colorsMatch || !intensityMatch) {
+      console.warn("Worker and POFS data do NOT match!");
+    } else {
+      console.log("Worker and POFS data are identical.");
+    }
+  } else {
+    console.error("POFS read failed.");
+  }
 }
 
 (async () => {
@@ -714,6 +842,21 @@ async function loadCOPC() {
   // const end9 = performance.now();
   // console.log(`Time taken to load COPC file: ${end9 - start9}ms`);
   // console.log("initialize the uniform buffers");
+
+  // Pick a node key and pointCount to test
+  // const testKey = Object.keys(nodePages)[1]; // or any valid key
+  // const pointCount = nodePages[testKey].pointCount;
+  // const posLen = pointCount * 3;
+  // const colLen = pointCount * 3;
+
+  // // For POFS
+  // const pofsFilename = `${source_file_name}-${testKey}`;
+
+  // // For fetch: get the byte range for this node (you may need to adjust this)
+  // // If you have offsetMap or similar, use it. Otherwise, hardcode for test.
+  // const fetchUrl = process.env.filename.replace(/"/g, "");
+  // const fetchStart = nodePages[testKey].pointDataOffset; // adjust if needed
+  // const fetchEnd = fetchStart + nodePages[testKey].pointDataLength - 1; // adjust if needed
 
   // const start10 = performance.now();
   let projViewMatrix = await stages(camera, proj, params);

@@ -45,13 +45,11 @@ let levelBuffer;
 const stats = Stats();
 document.body.appendChild(stats.dom);
 
-function throttle(callback, interval) {
-  let enableCall = true;
+function throttle(callback, delay) {
+  let timeout;
   return function (...args) {
-    if (!enableCall) return;
-    enableCall = false;
-    callback.apply(this, args);
-    setTimeout(() => (enableCall = true), interval);
+    clearTimeout(timeout);
+    timeout = setTimeout(() => callback.apply(this, args), delay);
   };
 }
 

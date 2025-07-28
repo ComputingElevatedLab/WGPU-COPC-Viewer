@@ -88,33 +88,44 @@ let readBin = async (fileName) => {
 };
 
 //--------------------------------------------------------------------------------
+let write = async (fileName, positions, colors, maxIntensity) => {
+  // positions and colors are Float32Array or arrays, maxIntensity is a number
+  const pos = new Float32Array(positions);
+  const col = new Float32Array(colors);
+  const meta = new Float32Array([maxIntensity]);
+  const totalLength = pos.length + col.length + meta.length;
+  const combined = new Float32Array(totalLength);
+  combined.set(pos, 0);
+  combined.set(col, pos.length);
+  combined.set(meta, pos.length + col.length);
 
-let write = async (fileName, data1) => {
   let fileToCheck = `${fileName}.bin`;
-  const blob = new Blob([data1], { type: "application/octet-stream" });
   const root = await navigator.storage.getDirectory();
-  const fileHandle = await root.getFileHandle(fileToCheck, {
-    create: true,
-  });
+  const fileHandle = await root.getFileHandle(fileToCheck, { create: true });
   const writableStream = await fileHandle.createWritable();
-  await writableStream.write(blob);
+  await writableStream.write(combined.buffer);
   await writableStream.close();
 };
 
-let read = async (fileName) => {
+let read = async (fileName, posLen, colLen) => {
   const root = await navigator.storage.getDirectory();
   const fileHandle = await root.getFileHandle(`${fileName}.bin`, {
     create: false,
   });
   let file = await fileHandle.getFile();
-  let content = await file.text();
-  if (content) {
-    return JSON.parse(content);
-  }
-  return null;
+  let buffer = await file.arrayBuffer();
+  const floatArray = new Float32Array(buffer);
+  const positions = floatArray.slice(0, posLen);
+  const colors = floatArray.slice(posLen, posLen + colLen);
+  const maxIntensity = floatArray[posLen + colLen];
+  return {
+    position: Array.from(positions),
+    color: Array.from(colors),
+    maxIntensity,
+  };
 };
 
-let doesExist = async (fileName) => {
+let doesExist = async (fileName, posLen, colLen) => {
   try {
     let fileToCheck = `${fileName}.bin`;
     const root = await navigator.storage.getDirectory();
@@ -122,19 +133,23 @@ let doesExist = async (fileName) => {
     const permissionStatus = await fileHandle.queryPermission();
     let found = permissionStatus == "granted" ? true : false;
     let retrived_blob = await fileHandle.getFile();
-    if(retrived_blob.size>0){
-      var reader = new FileReader();
-      return await new Promise((resolve, reject) => {
-        reader.onload = function () {
-          resolve([true, JSON.parse(reader.result)]);
-        };
-        reader.readAsText(retrived_blob);
-      });
-       
+    if (retrived_blob.size > 0) {
+      let buffer = await retrived_blob.arrayBuffer();
+      const floatArray = new Float32Array(buffer);
+      const positions = floatArray.slice(0, posLen);
+      const colors = floatArray.slice(posLen, posLen + colLen);
+      const maxIntensity = floatArray[posLen + colLen];
+      return [
+        true,
+        {
+          position: Array.from(positions),
+          color: Array.from(colors),
+          maxIntensity,
+        },
+      ];
+    } else {
+      return [true, { position: [], color: [] }];
     }
-    else{
-      return [ true, {position:[], color: []}]
-    } 
   } catch (error) {
     if (error.name === "NotFoundError") {
       return [false, null];
